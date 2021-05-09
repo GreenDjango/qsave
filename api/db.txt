@@ -1,0 +1,6 @@
+https://bugzilla.redhat.com/show_bug.cgi?id=1645678
+http://nginx.org/en/docs/http/ngx_http_core_module.html#try_files
+
+https://stackoverflow.com/questions/38702724/math-floor-vs-math-trunc-javascript
+https://arongriffis.com/2020-03-28-firefox-nightly
+https://wiki.archlinux.org/index.php/Desktop_entries

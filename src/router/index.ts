@@ -15,6 +15,11 @@ const routes: Array<RouteRecordRaw> = [
   //     props: true,
   // },
   {
+    path: '/add',
+    name: 'Add',
+    component: () => import(/* webpackChunkName: "add" */ '../views/Add.vue'),
+  },
+  {
     path: '/about',
     name: 'About',
     // route level code-splitting
