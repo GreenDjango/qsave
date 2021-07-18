@@ -1,13 +1,14 @@
 <template>
-  <div class="home grid grid-cols-1 gap-6 px-8 py-5 text-base-content">
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-      <div v-for="(stat, index) in stats" :key="index" class="card shadow-lg bg-base-100">
-        <div class="card-body flex-row justify-center items-center">
-          <Icon :glyph="stat.glyph" class="inline-block w-12 stroke-current mr-6" />
-          <div>
-            <h4 class="text-xl card-title mb-1">{{ stat.title }}</h4>
-            <span class="text-lg font-bold">{{ stat.value }}{{ stat.text }}</span>
+  <div class="home grid grid-cols-1 gap-6 px-8 py-5 max-w-screen-2xl mx-auto">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+      <div v-for="(stat, index) in stats" :key="index" class="card shadow-lg">
+        <div class="stat">
+          <div class="stat-figure text-accent-focus lg:mr-6">
+            <Icon :glyph="stat.glyph" class="inline-block w-10 stroke-current" />
           </div>
+          <div class="stat-title">{{ stat.title }}</div>
+          <div class="stat-value">{{ stat.text.replace('%v', stat.value) }}</div>
+          <div class="stat-desc">↗︎ 21% more than last month</div>
         </div>
       </div>
     </div>
@@ -16,15 +17,15 @@
       <div class="card-body px-6">
         <div class="w-full flex items-center justify-evenly flex-col md:flex-row">
           <ul v-show="Object.keys(selectTags).length" class="flex flex-wrap justify-center tags-list w-full md:w-1/4">
-            <li
+            <Badge
               v-for="(tag, key) in selectTags"
               :key="key"
+              :toHash="tag"
+              :text="tag"
+              :cross="true"
               @click="onRemoveTag(key)"
-              class="badge badge-accent badge-outline cursor-pointer mb-1"
-            >
-              {{ tag }}
-              <Icon glyph="x" class="inline-block w-4 h-4 ml-2 stroke-current" />
-            </li>
+              class="badge-outline cursor-pointer mb-1 mr-1"
+            />
           </ul>
 
           <div class="relative w-full sm:w-2/3 md:w-1/3 mt-3 md:mt-0">
@@ -43,7 +44,12 @@
               placeholder="Search"
               class="w-full pr-16 text-base input input-primary input-bordered"
             />
-            <button @click="onSearch" :disabled="loading" class="absolute right-0 rounded-l-none btn btn-primary">
+            <button
+              @click="onSearch"
+              :disabled="loading"
+              class="absolute right-0 rounded-l-none btn btn-primary"
+              aria-label="search"
+            >
               <Icon glyph="search" class="inline-block w-6 stroke-current" />
             </button>
           </div>
@@ -70,15 +76,19 @@
         -->
       </div>
     </div>
+    <!-- 
     <ColorPallet />
-    <img alt="Vue logo" src="@/assets/logo.svg" />
+    <img alt="Vue logo" src="@/assets/logo.svg" /> -->
   </div>
 </template>
 
 <script lang="ts">
-import copy from 'copy-text-to-clipboard'
 import { Options, Vue } from 'vue-class-component'
+import copy from 'copy-text-to-clipboard'
+import prettyBytes from 'pretty-bytes'
+import { useStore } from 'vuex'
 import Icon from '@/components/Icon.vue'
+import Badge from '@/components/Badge.vue'
 import Table from '@/components/Table.vue'
 import Loader from '@/components/Loader.vue'
 import ColorPallet from '@/components/ColorPallet.vue'
@@ -88,35 +98,45 @@ type Qnote = { id: number; date: Date; tags: string[]; url?: string; text?: stri
 @Options({
   components: {
     Icon,
+    Badge,
     Table,
     Loader,
     ColorPallet,
   },
 })
 export default class Home extends Vue {
+  store = useStore()
   loading = true
-  stats = [
-    { glyph: 'bookmark-alt', title: 'Total Qnotes', value: '103', text: '' },
-    { glyph: 'tag', title: 'Total tags', value: '56', text: '' },
-    { glyph: 'database', title: 'Database size', value: '10', text: 'ko' },
-  ]
-  tags = {
-    1: 'telekinesis',
-    2: 'time travel',
-    3: 'invisibility',
-  } as any
+  stats = {
+    tq: { glyph: 'bookmark-alt', title: 'Total Qnotes', value: '0', text: '%v' },
+    tt: { glyph: 'tag', title: 'Total tags', value: '0', text: '%v' },
+    ds: { glyph: 'database', title: 'Database size', value: '0', text: '%v' },
+  }
+  tags = {} as { [s: string]: string }
   tagPicker = '-1'
-  selectTags = {} as any
+  selectTags = {} as { [s: string]: string }
   items: Qnote[] = [
     { id: 1, date: new Date(2021, 3, 10), tags: ['url', 'UI-Design', 'Creativity'], url: 'https://www.google.com/' },
     { id: 2, date: new Date(), tags: ['url', 'UI-Design', 'Creativity'], url: 'https://www.google.com/' },
     { id: 3, date: new Date(2021, 3, 9), tags: ['url', 'UI-Design', 'Creativity'], text: 'Hello world' },
-    { id: 4, date: new Date(), tags: ['url', 'UI-Design', 'Creativity'], code: 'test' },
-    { id: 5, date: new Date(2021, 3, 11), tags: ['url', 'UI-Design', 'Creativity'], url: 'https://www.google.com/' },
+    {
+      id: 4,
+      date: new Date(2021, 3, 9),
+      tags: ['url', 'UI-Design', 'ui-Design', 'Creativity'],
+      text: 'Basic text a la destiap desd arizep diopati qistio xial ez',
+    },
+    {
+      id: 5,
+      date: new Date(),
+      tags: ['url', 'UI-Design', 'Creativity'],
+      code: 'npm install vue-prismjs --save\ncp ./cul abc\ntest\ntest',
+    },
+    { id: 6, date: new Date(2021, 3, 11), tags: ['url', 'UI-Design', 'Creativity'], url: 'https://www.google.com/' },
   ]
 
   beforeMount() {
     this.$watch('tagPicker', this.onTagPicker)
+    this.fetchStats()
     this.fetchQnotes()
   }
 
@@ -132,31 +152,55 @@ export default class Home extends Vue {
     delete this.selectTags[id]
   }
 
+  resetTagPicker(newTags: string[]) {
+    this.tagPicker = '-1'
+    this.selectTags = {}
+    this.tags = {}
+    newTags.forEach((val, idx) => {
+      this.tags[idx] = val
+    })
+  }
+
   onSearch() {
     console.log((this.$refs.searchBox as HTMLInputElement).value, Object.keys(this.selectTags))
     this.fetchQnotes()
   }
 
   onRowClick(row: Qnote) {
-    const dataToCopy = row.url || row.text || row.code
+    const dataToCopy = row.url || row.text || row.code || ''
     if (dataToCopy) {
       copy(String(dataToCopy))
-      this.notify('Copied !', { type: 'info', queue: false, duration: 1500 })
+      this.notify(`ID ${row.id} copied !`, { type: 'info', queue: false, duration: 1500 })
     }
   }
 
   async fetchQnotes() {
-    const query = new Promise((resolve) => {
-      setTimeout(() => resolve(1), 1500)
-    })
+    // const query = new Promise((resolve) => {
+    //   setTimeout(() => resolve(1), 1500)
+    // })
     this.loading = true
     try {
-      await query
+      await this.store.dispatch('loadQnotes')
+      this.items = this.store.state.qnotes
+      // await query
     } catch (err) {
       this.items = []
       this.notify(err, { title: 'Error', type: 'error', duration: 2500 })
     }
     this.loading = false
+  }
+
+  async fetchStats() {
+    try {
+      await this.store.dispatch('loadStats')
+      const tags = Object.keys(this.store.state.stats.all_tags || {})
+      this.resetTagPicker(tags.sort())
+      this.stats.tq.value = this.store.state.stats.total_qnotes
+      this.stats.tt.value = tags.length.toString()
+      this.stats.ds.value = prettyBytes(this.store.state.stats.db_size)
+    } catch (err) {
+      this.notify(err, { title: 'Error', type: 'error', duration: 2500 })
+    }
   }
 
   notify(
@@ -171,5 +215,10 @@ export default class Home extends Vue {
 <style scoped>
 .tags-list li:not(:last-child) {
   margin-right: 0.25rem;
+}
+
+.stat-title,
+.stat-desc {
+  opacity: 0.8;
 }
 </style>

@@ -1,6 +1,10 @@
 <template>
   <notifications />
-  <router-link :to="{ name: 'Add' }" class="absolute right-4 bottom-4 btn btn-primary btn-active btn-circle z-10">
+  <router-link
+    :to="{ name: 'Add' }"
+    class="absolute right-4 bottom-4 btn btn-primary btn-active btn-circle z-10"
+    aria-label="new qnote"
+  >
     <Icon glyph="plus" class="inline-block w-7 stroke-current" />
   </router-link>
   <Header class="w-full z-10" />

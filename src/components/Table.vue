@@ -11,7 +11,7 @@
     <thead>
       <tr>
         <th colspan="1" rowspan="1">
-          <button @click="onHeaderCellClick('id')" class="btn btn-ghost btn-sm">
+          <button @click="onHeaderCellClick('id')" class="btn btn-ghost btn-sm flex-nowrap">
             ID
             <Icon
               v-if="sortHeader.select === 'id'"
@@ -22,7 +22,7 @@
           </button>
         </th>
         <th colspan="1" rowspan="1">
-          <button @click="onHeaderCellClick('date')" class="btn btn-ghost btn-sm">
+          <button @click="onHeaderCellClick('date')" class="btn btn-ghost btn-sm flex-nowrap">
             Date
             <Icon
               v-if="sortHeader.select === 'date'"
@@ -33,7 +33,11 @@
           </button>
         </th>
         <th colspan="1" rowspan="1" class="text-left">Tags</th>
-        <th colspan="1" rowspan="1" class="text-left pl-4">Url / Text</th>
+        <th colspan="1" rowspan="1" class="text-left">
+          <div :data-tip="isAllCollapse ? 'extend' : 'collapse'" class="tooltip">
+            <button @click="extendCollapse()" class="btn btn-ghost btn-sm">Url / Text</button>
+          </div>
+        </th>
       </tr>
     </thead>
 
@@ -46,46 +50,65 @@
       >
         <td rowspan="1" colspan="1" class="text-center">{{ item.id }}</td>
 
-        <td rowspan="1" colspan="1" class="text-center">{{ item.date.toDateString().slice(4) }}</td>
-
-        <td rowspan="1" colspan="1">
-          <div v-for="(tag, index2) in item.tags" :key="index2" class="mr-1 badge badge-ghost">{{ tag }}</div>
+        <td rowspan="1" colspan="1" class="text-center" :title="item.date.toUTCString()">
+          {{ item.date.toDateString().slice(4) }}
         </td>
 
-        <td rowspan="1" colspan="1" class="max-w-xl p-0" @click.stop="">
-          <a v-if="item.url" :href="item.url" target="_blank" class="pl-4 link link-secondary">
-            {{ item.url }}
-          </a>
+        <td rowspan="1" colspan="1">
+          <Badge v-for="(tag, index2) in item.tags" :key="index2" class="badge-ghost mr-1" :text="tag" :toHash="tag" />
+        </td>
 
-          <ul v-else-if="item.text" class="accordion-arrow">
-            <li class="accordion-item">
-              <input :id="'item-' + item.id" type="checkbox" />
-              <label :for="'item-' + item.id" class="text-md font-medium accordion-title">
-                {{ item.text.substr(0, 15) }}...
-              </label>
-              <div class="accordion-body">
-                <p>{{ item.text }}</p>
-              </div>
-            </li>
-          </ul>
+        <td rowspan="1" colspan="1" class="max-w-xl p-0 cursor-default" @click.stop="">
+          <div v-if="item.type === 'URL'" class="pl-4">
+            <a :href="item.url" target="_blank" rel="noreferrer" class="link link-secondary">
+              {{ item.url }}
+            </a>
+          </div>
 
-          <div v-else-if="item.code" class="accordion-arrow">
-            <div class="accordion-item">
-              <input :id="'item-' + item.id" type="checkbox" />
-              <label :for="'item-' + item.id" class="text-md font-medium accordion-title">
-                {{ item.code.substr(0, 15) }}...
-              </label>
-              <div class="accordion-body accordion-body-code cursor-auto">
-                <div class="mockup-code-custom bg-base-300">
-                  <Prism language="bash" :code="'npm install vue-prismjs --save\ncp ./cul abc\ntest\ntest'" :plugins="[]"></Prism>
-                </div>
+          <p v-else-if="item.type === 'TEXT'" class="pl-4">
+            {{ item.text }}
+          </p>
+
+          <div v-else-if="item.type === 'TEXT_LONG'" class="custom-collapse collapse collapse-arrow">
+            <input :id="'item-' + item.id" :checked="!item.collapse" type="checkbox" />
+            <label :for="'item-' + item.id" class="collapse-title text-md font-medium"> {{ item.text.substr(0, 50) }}... </label>
+            <div class="collapse-content">
+              <p>{{ item.text }}</p>
+            </div>
+          </div>
+
+          <div v-else-if="item.type === 'URL_AND_TEXT'" class="custom-collapse collapse collapse-arrow">
+            <input :id="'item-' + item.id" :checked="!item.collapse" type="checkbox" />
+            <label :for="'item-' + item.id" class="collapse-title text-md font-medium z-10">
+              <a :href="item.url" target="_blank" rel="noreferrer"  class="link link-secondary">
+                {{ item.url }}
+              </a>
+            </label>
+            <div class="collapse-content">
+              <p>{{ item.text }}</p>
+            </div>
+          </div>
+
+          <div v-else-if="item.type === 'CODE' || item.type === 'URL_AND_CODE'" class="custom-collapse collapse collapse-arrow">
+            <input :id="'item-' + item.id" :checked="!item.collapse" type="checkbox" />
+            <label v-if="item.url" :for="'item-' + item.id" class="collapse-title text-md font-medium z-10">
+              <a :href="item.url" target="_blank" rel="noreferrer" class="link link-secondary">
+                {{ item.url }}
+              </a>
+            </label>
+            <label v-else :for="'item-' + item.id" class="collapse-title text-md font-medium">
+              {{ item.code.substr(0, 50) }}...
+            </label>
+            <div class="collapse-content collapse-content-code cursor-auto">
+              <div class="mockup-code-custom bg-base-300">
+                <Prism language="bash" :code="item.code" :plugins="[]" />
               </div>
             </div>
           </div>
         </td>
 
         <td rowspan="1" colspan="1">
-          <button @click.stop="" class="btn btn-square btn-sm">
+          <button @click.stop="" class="btn btn-square btn-sm" aria-label="edit row">
             <Icon glyph="pencil-alt" class="inline-block w-4 stroke-current" />
           </button>
         </td>
@@ -97,14 +120,26 @@
 <script lang="ts">
 import { Options, Vue } from 'vue-class-component'
 import Icon from '@/components/Icon.vue'
+import Badge from '@/components/Badge.vue'
 import Prism from '@/components/Prism.vue'
 import 'prismjs/themes/prism-tomorrow.css'
 
+enum DataType {
+  URL = 'URL',
+  URL_AND_TEXT = 'URL_AND_TEXT',
+  URL_AND_CODE = 'URL_AND_CODE',
+  TEXT = 'TEXT',
+  TEXT_LONG = 'TEXT_LONG',
+  CODE = 'CODE',
+}
+
 type Qnote = { id: number; date: Date; tags: string[]; url?: string; text?: string; code?: string }
+type LocalQnote = Qnote & { collapse: boolean; type: DataType }
 
 @Options({
   components: {
     Icon,
+    Badge,
     Prism,
   },
   props: {
@@ -113,8 +148,9 @@ type Qnote = { id: number; date: Date; tags: string[]; url?: string; text?: stri
 })
 export default class Table extends Vue {
   items: Qnote[] = []
-  localItems: Qnote[] = []
+  localItems: LocalQnote[] = []
   sortHeader = { select: '', reverse: false }
+  isAllCollapse = true
 
   beforeMount() {
     this.$watch('items', () => this.syncWithProps(), { deep: true })
@@ -122,9 +158,22 @@ export default class Table extends Vue {
   }
 
   syncWithProps() {
-    this.localItems = this.items.map((val) => val)
+    this.localItems = this.items.map((val) => {
+      return { ...val, collapse: true, type: this.parseQnoteType(val) }
+    })
     this.sortItems('id')
     this.sortHeader = { select: '', reverse: false }
+  }
+
+  parseQnoteType(qnote: Qnote) {
+    if (qnote.url && qnote.text) return DataType.URL_AND_TEXT
+    if (qnote.url && qnote.code) return DataType.URL_AND_CODE
+    if (qnote.url) return DataType.URL
+    if (qnote.text && qnote.text.length > 60) return DataType.TEXT_LONG
+    if (qnote.text) return DataType.TEXT
+    if (qnote.code) return DataType.CODE
+    qnote.text = ''
+    return DataType.TEXT
   }
 
   onHeaderCellClick(headerSelect: string) {
@@ -138,14 +187,21 @@ export default class Table extends Vue {
   }
 
   sortItems(by: 'id' | 'date', reverse = false) {
-    let getValue = (itm: Qnote) => itm.id
-    if (by === 'date') getValue = (itm: Qnote) => itm.date.getTime()
+    let getValue = (itm: LocalQnote) => itm.id
+    if (by === 'date') getValue = (itm: LocalQnote) => itm.date.getTime()
 
     this.localItems.sort((itm1, itm2) => {
       const a = getValue(itm1)
       const b = getValue(itm2)
       if (reverse) return b - a
       else return a - b
+    })
+  }
+
+  extendCollapse() {
+    this.isAllCollapse = !this.isAllCollapse
+    this.localItems.forEach((val) => {
+      val.collapse = this.isAllCollapse
     })
   }
 
@@ -190,21 +246,38 @@ td:first-child {
 }
 */
 
-.accordion-arrow .accordion-item .accordion-title {
-  padding: 0.5rem 1rem;
+/* Header */
+
+.chevron-icon {
+  transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
-.accordion-arrow .accordion-item .accordion-title::after {
+.reverse-icon {
+  transform: rotateZ(180deg);
+}
+
+/* Row content */
+
+.custom-collapse {
+  border-radius: 0.8rem;
+}
+
+.custom-collapse .collapse-title {
+  padding: 0.5rem 1rem;
+  min-height: auto;
+}
+
+.custom-collapse .collapse-title::after {
   top: 0.8rem;
 }
 
-.accordion-item input:checked ~ .accordion-body-code {
-  padding-bottom: 0.5rem;
-}
-
-.accordion-item .accordion-body-code {
+.custom-collapse .collapse-content-code {
   padding-left: 0.5rem;
   padding-right: 0.5rem;
+}
+
+.custom-collapse input:checked ~ .collapse-content-code {
+  padding-bottom: 0.5rem !important;
 }
 
 .mockup-code-custom {
@@ -226,11 +299,7 @@ td:first-child {
   box-shadow: 1em 0, 2.4em 0, 3.8em 0;
 }
 
-.chevron-icon {
-  transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-.reverse-icon {
-  transform: rotateZ(180deg);
+.link-secondary {
+  text-decoration-color: hsla(var(--a) / 0.5);
 }
 </style>

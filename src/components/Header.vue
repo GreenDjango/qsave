@@ -1,24 +1,23 @@
 <template>
   <div class="navbar shadow-lg bg-neutral-focus text-neutral-content">
     <div class="flex-none">
-      <button v-on:click="reloadPage" class="btn btn-square btn-ghost">
-        <img src="../assets/logo.svg" class="inline-block w-10 h-10" />
+      <button v-on:click="reloadPage" class="btn btn-ghost flex">
+        <img src="../assets/logo.svg" class="inline-block w-10 h-10 mr-3" alt="qsave logo" />
+        <span class="site-title text-2xl font-bold normal-case">Qsave</span>
       </button>
     </div>
-    <div class="flex-1 px-2 mx-2">
-      <span class="text-lg font-bold"> Qsave </span>
-    </div>
+    <div class="flex-1 px-2 mx-2"></div>
     <div class="flex-none flex px-2 mx-2">
       <div class="flex items-stretch">
-        <router-link :to="{ name: 'Home' }" class="btn btn-ghost btn-sm">
+        <router-link :to="{ name: 'Home' }" class="btn btn-ghost btn-sm leading-none">
           <Icon glyph="home" class="inline-block w-5 mr-2 stroke-current" />
           Home
         </router-link>
-        <router-link :to="{ name: 'Add' }" class="btn btn-ghost btn-sm">
+        <router-link :to="{ name: 'Add' }" class="btn btn-ghost btn-sm leading-none">
           <Icon glyph="plus-circle" class="inline-block w-5 mr-2 stroke-current" />
           Add a Qnote
         </router-link>
-        <router-link :to="{ name: 'About' }" class="btn btn-ghost btn-sm">
+        <router-link :to="{ name: 'About' }" class="btn btn-ghost btn-sm leading-none">
           <Icon glyph="information-circle" class="inline-block w-5 mr-2 stroke-current" />
           About
         </router-link>
@@ -50,6 +49,10 @@ export default class Header extends Vue {
    color: #42b983;
  }
 */
+
+.site-title {
+  font-family: 'Numans', sans-serif;
+}
 
 .router-link-active {
   background-color: hsla(var(--bc, 215 28% 17%) / 0.2);

@@ -13,7 +13,7 @@
         </label>
       </div>
       <div class="flex-none ml-2">
-        <button @click="onItemClick" class="btn btn-sm btn-ghost btn-square">
+        <button @click="onItemClick" class="btn btn-sm btn-ghost btn-square" aria-label="close alert">
           <Icon glyph="x" class="w-6 h-6 stroke-current" />
         </button>
       </div>
