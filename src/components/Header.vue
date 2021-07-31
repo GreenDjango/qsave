@@ -1,7 +1,7 @@
 <template>
   <div class="navbar shadow-lg bg-neutral-focus text-neutral-content">
     <div class="flex-none">
-      <button v-on:click="reloadPage" class="btn btn-ghost flex">
+      <button v-on:click="reloadPage" class="btn btn-ghost flex px-2">
         <img src="../assets/logo.svg" class="inline-block w-10 h-10 mr-3" alt="qsave logo" />
         <span class="site-title text-2xl font-bold normal-case">Qsave</span>
       </button>
@@ -9,15 +9,15 @@
     <div class="flex-1 px-2 mx-2"></div>
     <div class="flex-none flex px-2 mx-2">
       <div class="flex items-stretch">
-        <router-link :to="{ name: 'Home' }" class="btn btn-ghost btn-sm leading-none">
+        <router-link :to="{ name: 'Home' }" class="btn btn-ghost btn-sm px-2 leading-none mr-1">
           <Icon glyph="home" class="inline-block w-5 mr-2 stroke-current" />
           Home
         </router-link>
-        <router-link :to="{ name: 'Add' }" class="btn btn-ghost btn-sm leading-none">
+        <router-link :to="{ name: 'Add' }" class="btn btn-ghost btn-sm px-2 leading-none mr-1">
           <Icon glyph="plus-circle" class="inline-block w-5 mr-2 stroke-current" />
           Add a Qnote
         </router-link>
-        <router-link :to="{ name: 'About' }" class="btn btn-ghost btn-sm leading-none">
+        <router-link :to="{ name: 'About' }" class="btn btn-ghost btn-sm px-2 leading-none">
           <Icon glyph="information-circle" class="inline-block w-5 mr-2 stroke-current" />
           About
         </router-link>

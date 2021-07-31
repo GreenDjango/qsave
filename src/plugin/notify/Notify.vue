@@ -2,17 +2,19 @@
   <div :class="{ 'alert-box-down': isDown }" class="alert-box absolute z-20 flex flex-col p-2 cursor-pointer">
     <div class="alert text-neutral-content">
       <div class="flex-1">
-        <Icon v-if="type == 'info'" glyph="information-circle" class="flex-shrink-0 w-6 h-6 mx-2" color="#2094F3" />
-        <Icon v-else-if="type == 'success'" glyph="folder" class="flex-shrink-0 w-6 h-6 mx-2" color="#009485" />
-        <Icon v-else-if="type == 'warning'" glyph="exclamation" class="flex-shrink-0 w-6 h-6 mx-2" color="#FF9900" />
-        <Icon v-else-if="type == 'error'" glyph="exclamation-circle" class="flex-shrink-0 w-6 h-6 mx-2" color="#ff5722" />
-        <Icon v-else glyph="bell" class="flex-shrink-0 w-6 h-6 mx-2" color="#009688" />
+        <div class="mr-4">
+          <Icon v-if="type == 'info'" glyph="information-circle" class="flex-shrink-0 w-6 h-6" color="#2094F3" />
+          <Icon v-else-if="type == 'success'" glyph="check-circle" class="flex-shrink-0 w-6 h-6" color="#009485" />
+          <Icon v-else-if="type == 'warning'" glyph="exclamation" class="flex-shrink-0 w-6 h-6" color="#FF9900" />
+          <Icon v-else-if="type == 'error'" glyph="exclamation-circle" class="flex-shrink-0 w-6 h-6" color="#ff5722" />
+          <Icon v-else glyph="bell" class="flex-shrink-0 w-6 h-6" color="#009688" />
+        </div>
         <label>
-          <h4 class="text-lg">{{ title }}</h4>
-          <p class="text-sm">{{ text }}</p>
+          <h4 class="text-lg leading-6">{{ title }}</h4>
+          <p class="text-sm pt-1">{{ text }}</p>
         </label>
       </div>
-      <div class="flex-none ml-2">
+      <div class="flex-none ml-4">
         <button @click="onItemClick" class="btn btn-sm btn-ghost btn-square" aria-label="close alert">
           <Icon glyph="x" class="w-6 h-6 stroke-current" />
         </button>

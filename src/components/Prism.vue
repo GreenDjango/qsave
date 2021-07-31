@@ -140,4 +140,8 @@ pre[class*="language-"].prism-pre {
   padding: 0 1rem 1rem 1rem;
   margin: 0;
 }
+
+pre[class*="language-"].prism-pre.line-numbers {
+  padding-left: 3rem;
+}
 </style>

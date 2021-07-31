@@ -87,6 +87,8 @@ import { Options, Vue } from 'vue-class-component'
 import copy from 'copy-text-to-clipboard'
 import prettyBytes from 'pretty-bytes'
 import { useStore } from 'vuex'
+import { notify } from '@/plugin/notify'
+import { stringifyError, errorTitle } from '@/utils'
 import Icon from '@/components/Icon.vue'
 import Badge from '@/components/Badge.vue'
 import Table from '@/components/Table.vue'
@@ -140,7 +142,7 @@ export default class Home extends Vue {
     this.fetchQnotes()
   }
 
-  onTagPicker(newVal: string, oldVal: string) {
+  onTagPicker(newVal: string) {
     if (newVal === '-1') return
     this.tagPicker = '-1'
     this.selectTags[newVal] = this.tags[newVal]
@@ -170,22 +172,18 @@ export default class Home extends Vue {
     const dataToCopy = row.url || row.text || row.code || ''
     if (dataToCopy) {
       copy(String(dataToCopy))
-      this.notify(`ID ${row.id} copied !`, { type: 'info', queue: false, duration: 1500 })
+      notify.show(`ID ${row.id} copied !`, { type: 'info', queue: false, duration: 1500 })
     }
   }
 
   async fetchQnotes() {
-    // const query = new Promise((resolve) => {
-    //   setTimeout(() => resolve(1), 1500)
-    // })
     this.loading = true
     try {
       await this.store.dispatch('loadQnotes')
       this.items = this.store.state.qnotes
-      // await query
     } catch (err) {
       this.items = []
-      this.notify(err, { title: 'Error', type: 'error', duration: 2500 })
+      notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 3000 })
     }
     this.loading = false
   }
@@ -199,15 +197,8 @@ export default class Home extends Vue {
       this.stats.tt.value = tags.length.toString()
       this.stats.ds.value = prettyBytes(this.store.state.stats.db_size)
     } catch (err) {
-      this.notify(err, { title: 'Error', type: 'error', duration: 2500 })
+      notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 3000 })
     }
-  }
-
-  notify(
-    text: string,
-    options: { duration?: number; title?: string; type?: 'basic' | 'info' | 'success' | 'warning' | 'error'; queue?: boolean }
-  ) {
-    ;(this as any).$notify.show(text, options)
   }
 }
 </script>

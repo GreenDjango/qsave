@@ -80,7 +80,7 @@
           <div v-else-if="item.type === 'URL_AND_TEXT'" class="custom-collapse collapse collapse-arrow">
             <input :id="'item-' + item.id" :checked="!item.collapse" type="checkbox" />
             <label :for="'item-' + item.id" class="collapse-title text-md font-medium z-10">
-              <a :href="item.url" target="_blank" rel="noreferrer"  class="link link-secondary">
+              <a :href="item.url" target="_blank" rel="noreferrer" class="link link-secondary">
                 {{ item.url }}
               </a>
             </label>
@@ -100,9 +100,7 @@
               {{ item.code.substr(0, 50) }}...
             </label>
             <div class="collapse-content collapse-content-code cursor-auto">
-              <div class="mockup-code-custom bg-base-300">
-                <Prism language="bash" :code="item.code" :plugins="[]" />
-              </div>
+              <MockupCode language="bash" :code="item.code" :plugins="[]" />
             </div>
           </div>
         </td>
@@ -121,8 +119,7 @@
 import { Options, Vue } from 'vue-class-component'
 import Icon from '@/components/Icon.vue'
 import Badge from '@/components/Badge.vue'
-import Prism from '@/components/Prism.vue'
-import 'prismjs/themes/prism-tomorrow.css'
+import MockupCode from '@/components/MockupCode.vue'
 
 enum DataType {
   URL = 'URL',
@@ -140,7 +137,7 @@ type LocalQnote = Qnote & { collapse: boolean; type: DataType }
   components: {
     Icon,
     Badge,
-    Prism,
+    MockupCode,
   },
   props: {
     items: Array,
@@ -258,6 +255,10 @@ td:first-child {
 
 /* Row content */
 
+.collapse > input[type="checkbox"] {
+  min-height: max-content;
+}
+
 .custom-collapse {
   border-radius: 0.8rem;
 }
@@ -278,25 +279,6 @@ td:first-child {
 
 .custom-collapse input:checked ~ .collapse-content-code {
   padding-bottom: 0.5rem !important;
-}
-
-.mockup-code-custom {
-  overflow: hidden;
-  overflow-x: auto;
-  position: relative;
-  padding-top: 1rem;
-  border-radius: var(--rounded-box, 1rem);
-}
-
-.mockup-code-custom::before {
-  content: '';
-  border-radius: 9999px;
-  display: block;
-  height: 0.75rem;
-  margin-bottom: 0.5rem;
-  opacity: 0.3;
-  width: 0.75rem;
-  box-shadow: 1em 0, 2.4em 0, 3.8em 0;
 }
 
 .link-secondary {

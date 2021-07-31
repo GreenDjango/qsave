@@ -7,7 +7,9 @@
 *(Need docker)*
 https://docs.docker.com/compose/install/
 
-Client web: http://localhost:8080/
+Client web: http://localhost:8081/
+
+API web: http://localhost:8081/api/
 
 Server (expose on docker networks): php:9000
 
