@@ -156,13 +156,14 @@ class JSONDB {
 	 * 
 	 * @param string $file json filename without extension
 	 * @param array $values Array of columns as keys and values
+	 * @param bool $match_first_row Try merge or throw if value keys is differents from the first row
 	 * 
 	 * @return array $last_indexes Array of last index inserted
 	 */
-	public function insert( $file, array $values ) : array {
+	public function insert( $file, array $values, bool $match_first_row = false ) : array {
 		$this->from( $file );
 
-		if( !empty( $this->content[ 0 ] ) ) {
+		if( $match_first_row && !empty( $this->content[ 0 ] ) ) {
 			$nulls = array_diff_key( ( array ) $this->content[ 0 ], $values );
 			if( $nulls ) {
 				$nulls = array_map( function() {
@@ -172,7 +173,7 @@ class JSONDB {
 			}
 		}
 
-		if( 0 /* !empty( $this->content ) && array_diff_key( $values, (array ) $this->content[ 0 ] ) */ ) {
+		if( $match_first_row && !empty( $this->content ) && array_diff_key( $values, (array ) $this->content[ 0 ] ) ) {
 			throw new \Exception( 'Columns must match as of the first row' );
 		} else {
 			$this->content[] = ( object ) $values;
@@ -263,16 +264,16 @@ class JSONDB {
 
 	private function intersect_value_check($a, $b) {
 		if( $b instanceof \stdClass ) {
-			if( $b->is_regex ) {
-				return !preg_match( $b->value, (string)$a, $_, $b->options );
+			if( $b->is_regex && preg_match( $b->value, (string)$a, $_, $b->options )) {
+				return 0;
 			}
 
 			return -1;
 		}
 
 		if( $a instanceof \stdClass ) {
-			if( $a->is_regex ) {
-				return !preg_match( $a->value, (string)$b, $_, $a->options );
+			if( $a->is_regex && preg_match( $a->value, (string)$b, $_, $a->options )) {
+				return 0;
 			}
 
 			return -1;
@@ -296,16 +297,16 @@ class JSONDB {
 			// Filter array
 			$r = array_filter($this->content, function( $row, $index ) {
 				$row = (array) $row; // Convert first stage to array if object
-				
+
 				// Check for rows intersecting with the where values.
 				if( array_uintersect_uassoc( $row, $this->where, array($this, "intersect_value_check" ), "strcasecmp" ) /*array_intersect_assoc( $row, $this->where )*/ ) {
 					$this->last_indexes[] =  $index;
 					return true;
 				}
-				
+
 				return false;
 			}, ARRAY_FILTER_USE_BOTH );
-			
+
 			// Make sure every  object is turned to array here.
 			return array_values( obj_to_array( $r ) );
 		}

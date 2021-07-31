@@ -1,10 +1,15 @@
 <?php
 
 declare(strict_types=1);
+if (false) {
+	ini_set('display_startup_errors', 'On');
+	ini_set('display_errors', 'On');
+	error_reporting(-1);
+}
 
+http_response_code(500);
 header("Access-Control-Allow-Origin: *");
 //header("Access-Control-Allow-Credentials: true"); // need Allow-Origin != *
-header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Max-Age: 3600");
 header("Access-Control-Allow-Headers: Content-Type, origin, accept, host, date, cookie, Access-Control-Allow-Headers, Authorization, X-Requested-With, API-key");
@@ -16,7 +21,9 @@ use \Jajo\JSONDB;
 
 define("STATS_DB", 'stats');
 define("QNOTES_DB", 'qnotes');
-
+define("RES_MAX", 50);
+// define("URL_PREFIX", '/projects/qsave/api');
+define("URL_PREFIX", '/api');
 $json_db = new JSONDB(__DIR__);
 
 // if (!array_key_exists("HTTP_API_KEY", $_SERVER) || $_SERVER[""])
@@ -26,15 +33,22 @@ main();
 function main()
 {
 	$get_routes = [
-		'api/test' => 'get_test',
-		'api/stats' => 'get_stats',
-		'api/qnotes' => 'get_qnotes'
+		// constant("URL_PREFIX") => 'get_test',
+		constant("URL_PREFIX") . '/test' => 'get_test',
+		constant("URL_PREFIX") . '/stats' => 'get_stats',
+		constant("URL_PREFIX") . '/qnote' => 'get_qnote',
+		constant("URL_PREFIX") . '/qnotes' => 'get_qnotes',
+		constant("URL_PREFIX") . '/search' => 'get_search'
 	];
 	$post_routes = [
-		'api/qnote' => 'add_qnote'
+		constant("URL_PREFIX") . '/qnote' => 'add_qnote'
 	];
-	$uri = trim($_SERVER['DOCUMENT_URI'], "\t\n\r\0\x0B/");
-	if (!$uri) $uri = "/";
+
+	if (array_key_exists("DOCUMENT_URI", $_SERVER))
+		$uri = "/" . trim($_SERVER['DOCUMENT_URI'], "\t\n\r\0\x0B/");
+	else
+		$uri = "/" . trim($_SERVER['SCRIPT_URL'], "\t\n\r\0\x0B/");
+	if (!isset($uri) || !$uri) exit_with(500, "Missing URI.");
 
 	switch ($_SERVER['REQUEST_METHOD']) {
 		case 'GET':
@@ -77,19 +91,65 @@ function get_stats()
 	exit_with(200, array("stats" => $stats[0]));
 }
 
+function get_qnote()
+{
+	get_qnotes();
+}
+
 function get_qnotes()
 {
 	global $json_db;
 
 	$qnotes = (array) $json_db->select('*')
 		->from(constant("QNOTES_DB"))
+		->limit(constant("RES_MAX"))
 		->get();
 
-	foreach ($qnotes as $id => $qnote) {
-		// $qnote_arr = (array) $qnote;
-		$qnote = parse_tags((array) $qnote);
-		$qnotes[$id] = $qnote;
+	$qnotes = retrieve_qnotes($qnotes);
+
+	exit_with(200, array("qnotes" => $qnotes));
+}
+
+function get_search()
+{
+	global $json_db;
+	global $q_arg;
+	$where = [];
+
+	$tags_arg = parse_param_string("tags");
+	if ($tags_arg) $tags_arg = clean_tags($tags_arg);
+	if ($tags_arg) {
+		$tagExp = [];
+		$tags = string_to_tags($tags_arg);
+		foreach ($tags as $id => $tag) {
+			$tag = preg_quote($tag);
+			array_push($tagExp, "(;".$tag.";)|(^".$tag.";)|(;".$tag."$)");
+		}
+		$reg = "/" . implode("|", $tagExp) . "/i";
+		$where["tags"] = JSONDB::regex($reg);
 	}
+
+	$qnotes = (array) $json_db->select('*')
+		->from(constant("QNOTES_DB"))
+		->where($where, JSONDB::OR)
+		->get();
+
+	$q_arg = parse_param_string("q");
+	if ($q_arg) {
+		$qnotes = array_filter($qnotes, function ($qnote) {
+			global $q_arg;
+			$qnote = (array) $qnote;
+			$keys = ["url", "text", "code"];
+			foreach ($keys as $key) {
+				$reg = "/" . preg_quote($q_arg, '/') . "/i";
+				if (array_key_exists($key, $qnote) && preg_match($reg, $qnote[$key])) return true;
+			}
+			return false;
+		});
+	}
+
+	$qnotes = array_slice($qnotes, 0, constant("RES_MAX"), false);
+	$qnotes = retrieve_qnotes($qnotes);
 
 	exit_with(200, array("qnotes" => $qnotes));
 }
@@ -103,22 +163,26 @@ function add_qnote()
 		'date' => $now->format(DateTime::ISO8601),
 	];
 
-
-	$tags_arg = parse_post_string("tags");
+	$tags_arg = parse_param_string("tags");
 	if ($tags_arg) {
-		$tags_arg = trim($tags_arg, ";");
-		$tags_arg = preg_replace('/;+/', ';', $tags_arg);
-		if (preg_match('/[^a-z0-9-;]/', $tags_arg))
-			exit_with(400, "'tags' parameter can only contain a-z or 0-9 or - or ; digit.");
+		$tags_arg = clean_tags($tags_arg);
 		if ($tags_arg) $new_qnote["tags"] = $tags_arg;
 	}
 
-	$url_arg = parse_post_string("url");
-	$text_arg = parse_post_string("text");
-	$code_arg = parse_post_string("code");
+	$url_arg = parse_param_string("url");
+	$text_arg = parse_param_string("text");
+	$code_arg = parse_param_string("code");
+	$code_lang_arg = parse_param_string("code_lang");
 	if ($url_arg) $new_qnote["url"] = $url_arg;
 	if ($text_arg) $new_qnote["text"] = $text_arg;
-	if ($code_arg) $new_qnote["code"] = $code_arg;
+	if ($code_arg) {
+		$new_qnote["code"] = $code_arg;
+		$new_qnote["code_lang"] = "plaintext";
+	}
+	if ($code_lang_arg) $new_qnote["code_lang"] = $code_lang_arg;
+
+	if ((!$url_arg || !strlen($url_arg)) && (!$text_arg || !strlen($text_arg)) && (!$code_arg || !strlen($code_arg)))
+		exit_with(400, "'url' or 'text' or 'code' parameters are need.");
 
 	$result = $json_db->select('*')
 		->from(constant("QNOTES_DB"))
@@ -131,7 +195,7 @@ function add_qnote()
 
 	generate_stats();
 
-	// exit_with(200, array("test" => $new_qnote));
+	exit_with(201, "Created.");
 }
 
 function generate_stats() {
@@ -147,17 +211,17 @@ function generate_stats() {
 	foreach ($qnotes as $id => $qnote) {
 		//$qnote_arr = (array) $qnote;
 		if (array_key_exists("tags", $qnote)) {
-			$tags = explode(";", $qnote["tags"]);
+			$tags = string_to_tags($qnote["tags"]);
 			foreach ($tags as $id2 => $tag) {
 				if (array_key_exists($tag, $all_tags)) $all_tags[$tag] += 1;
 				else $all_tags[$tag] = 1;
 			}
 		}
 	}
-
+	array_multisort($all_tags);
 	
 	$last_qnote = current($qnotes);
-	if ($last_qnote) $last_qnote = parse_tags((array) $last_qnote);
+	if ($last_qnote) $last_qnote = retrieve_qnote((array) $last_qnote);
 	// if (array_key_exists(0, $qnotes) && array_key_exists("date" ,$qnotes[0]))
 	// 	$last_qnote = $qnotes[0]["date"];
 
