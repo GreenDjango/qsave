@@ -1,9 +1,14 @@
-.DS_Store
-node_modules
+# Build folder
 /dist
 
+# Dependencies
+node_modules
+
+# Force to use yarn
+package-lock.lock
 
 # local env files
+.env
 .env.local
 .env.*.local
 
@@ -12,6 +17,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+
+# Misc
+.DS_Store
 
 # Editor directories and files
 .idea

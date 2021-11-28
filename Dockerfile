@@ -1,7 +1,5 @@
-# Proxy
-
 # set builder image
-FROM node:14.17-alpine AS builder
+FROM node:16-alpine AS builder
 
 # set the working directory in the container
 WORKDIR /build
@@ -20,11 +18,6 @@ RUN npm run build
 
 # set base image (host OS)
 FROM nginx:1.21-alpine
-
-# copy the dependencies file to the working directory
-#COPY ./nginx.conf /etc/nginx/conf.d/default.conf
-#COPY ./nginx.conf /etc/nginx/conf.d/nginx.conf
-#COPY ./nginx.conf /etc/nginx/nginx.conf
 
 COPY --from=builder /build/dist/ /data/www/
 
