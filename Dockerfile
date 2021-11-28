@@ -6,15 +6,16 @@ WORKDIR /build
 
 # copy the dependencies file to the working directory
 COPY package*.json ./
+COPY yarn.lock ./
 
 # install dependencies
-RUN npm install --silent --no-fund
+RUN yarn --silent --no-progress
 
 # copy the src
 COPY ./ ./
 
 # compiles and minifies for production
-RUN npm run build
+RUN yarn run build
 
 # set base image (host OS)
 FROM nginx:1.21-alpine

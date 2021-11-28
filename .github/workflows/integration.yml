@@ -43,5 +43,5 @@ jobs:
           mkdir -p ~/.hello
           rm -rf *.tar
           docker save -o ~/.hello/nginx.tar nginx:1.21-alpine
-          docker save -o ~/.hello/node.tar node:14.17-alpine
+          docker save -o ~/.hello/node.tar node:16-alpine
           docker save -o ~/.hello/php.tar php:8.0-fpm-alpine
