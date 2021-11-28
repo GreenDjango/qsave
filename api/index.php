@@ -36,6 +36,7 @@ function main()
 		// constant("URL_PREFIX") => 'get_test',
 		constant("URL_PREFIX") . '/test' => 'get_test',
 		constant("URL_PREFIX") . '/stats' => 'get_stats',
+		constant("URL_PREFIX") . '/tags' => 'get_tags',
 		constant("URL_PREFIX") . '/qnote' => 'get_qnote',
 		constant("URL_PREFIX") . '/qnotes' => 'get_qnotes',
 		constant("URL_PREFIX") . '/search' => 'get_search'
@@ -80,6 +81,17 @@ function get_test()
 	exit_with(200, array("server" => var_export($_SERVER, true)));
 }
 
+function get_tags()
+{
+	global $json_db;
+
+	$stats = $json_db->select('*')
+		->from(constant("STATS_DB"))
+		->get();
+
+	exit_with(200, array("tags" => $stats[0]->all_tags));
+}
+
 function get_stats()
 {
 	global $json_db;
@@ -93,7 +105,23 @@ function get_stats()
 
 function get_qnote()
 {
-	get_qnotes();
+	global $json_db;
+
+	$id_arg = parse_param_number("qnoteID");
+	if (!$id_arg)
+		exit_with(400, "'qnoteID' parameter are need.");
+	$id_arg = (int)$id_arg;
+
+	$qnotes = (array) $json_db->select('*')
+		->from(constant("QNOTES_DB"))
+		->where(['id' => $id_arg])
+		->get();
+
+	$qnote = array_shift($qnotes);
+	if ($qnote)
+		$qnote = retrieve_qnote($qnote);
+
+	exit_with(200, array("qnote" => $qnote));
 }
 
 function get_qnotes()
@@ -123,7 +151,7 @@ function get_search()
 		$tags = string_to_tags($tags_arg);
 		foreach ($tags as $id => $tag) {
 			$tag = preg_quote($tag);
-			array_push($tagExp, "(;".$tag.";)|(^".$tag.";)|(;".$tag."$)");
+			array_push($tagExp, "(;" . $tag . ";)|(^" . $tag . ";)|(;" . $tag . "$)");
 		}
 		$reg = "/" . implode("|", $tagExp) . "/i";
 		$where["tags"] = JSONDB::regex($reg);
@@ -198,7 +226,8 @@ function add_qnote()
 	exit_with(201, "Created.");
 }
 
-function generate_stats() {
+function generate_stats()
+{
 	global $json_db;
 	$now = new DateTime();
 
@@ -219,19 +248,19 @@ function generate_stats() {
 		}
 	}
 	array_multisort($all_tags);
-	
+
 	$last_qnote = current($qnotes);
 	if ($last_qnote) $last_qnote = retrieve_qnote((array) $last_qnote);
 	// if (array_key_exists(0, $qnotes) && array_key_exists("date" ,$qnotes[0]))
 	// 	$last_qnote = $qnotes[0]["date"];
 
 	$json_db->update([
-			'total_qnotes' => count($qnotes),
-			'last_qnote' => $last_qnote,
-			'last_update' => $now->format(DateTime::ISO8601),
-			'all_tags' => $all_tags,
-			'db_size' => filesize(constant("QNOTES_DB") . ".json")
-		])
+		'total_qnotes' => count($qnotes),
+		'last_qnote' => $last_qnote,
+		'last_update' => $now->format(DateTime::ISO8601),
+		'all_tags' => $all_tags,
+		'db_size' => filesize(constant("QNOTES_DB") . ".json")
+	])
 		->from(constant("STATS_DB"))
 		->where(['id' => 1])
 		->trigger();

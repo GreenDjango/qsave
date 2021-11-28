@@ -1,15 +1,12 @@
 <template>
-  <div class="about">
-    https://heroicons.com/
-    <ul class="accordion w-64 accordion-bordered accordion-arrow">
-      <li class="accordion-item">
-        <input id="item-278314" type="checkbox" />
-        <label for="item-278314" class="text-xl font-medium accordion-title"> Aperiam iure? </label>
-        <div class="accordion-body">
-          <p>Aperiam iure expedita non fugit. Voluptatem est repellat a aut sit est nostrum maiores aut.</p>
-        </div>
-      </li>
-    </ul>
+  <div class="about hero h-full">
+    <div class="text-center hero-content">
+      <div class="max-w-md">
+        <h1 class="mb-5 text-4xl font-bold">Qsave</h1>
+        <p class="mb-5 text-lg">Save your links and code samples in 1sec!</p>
+        <router-link :to="{ name: 'Home' }" class="btn btn-primary"> Add a Qnote </router-link>
+      </div>
+    </div>
   </div>
 </template>
 

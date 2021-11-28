@@ -31,6 +31,14 @@ function parse_param_string(string $key) {
 	return $value;
 }
 
+function parse_param_number(string $key) {
+	$value = parse_param_string($key);
+	if (!$value) return false;
+	if (!is_numeric($value))
+		exit_with(400, "'" . $key . "' parameter need to be a number.");
+	return floatval($value);
+}
+
 function clean_tags(string $str) {
 	$str = trim($str, ";");
 	$str = preg_replace('/;+/', ';', $str);

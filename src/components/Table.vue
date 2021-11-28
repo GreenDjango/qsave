@@ -50,8 +50,8 @@
       >
         <td rowspan="1" colspan="1" class="text-center">{{ item.id }}</td>
 
-        <td rowspan="1" colspan="1" class="text-center" :title="item.date.toUTCString()">
-          {{ item.date.toDateString().slice(4) }}
+        <td rowspan="1" colspan="1" class="text-center" :title="item.parseDate.toUTCString()">
+          {{ item.parseDate.toDateString().slice(4) }}
         </td>
 
         <td rowspan="1" colspan="1">
@@ -117,6 +117,7 @@
 
 <script lang="ts">
 import { Options, Vue } from 'vue-class-component'
+import { Qnote } from '@/api/server.api'
 import Icon from '@/components/Icon.vue'
 import Badge from '@/components/Badge.vue'
 import MockupCode from '@/components/MockupCode.vue'
@@ -130,7 +131,6 @@ enum DataType {
   CODE = 'CODE',
 }
 
-type Qnote = { id: number; date: Date; tags: string[]; url?: string; text?: string; code?: string }
 type LocalQnote = Qnote & { collapse: boolean; type: DataType }
 
 @Options({
@@ -185,7 +185,7 @@ export default class Table extends Vue {
 
   sortItems(by: 'id' | 'date', reverse = false) {
     let getValue = (itm: LocalQnote) => itm.id
-    if (by === 'date') getValue = (itm: LocalQnote) => itm.date.getTime()
+    if (by === 'date') getValue = (itm: LocalQnote) => itm.parseDate?.getTime() || 0
 
     this.localItems.sort((itm1, itm2) => {
       const a = getValue(itm1)
@@ -255,7 +255,7 @@ td:first-child {
 
 /* Row content */
 
-.collapse > input[type="checkbox"] {
+.collapse > input[type='checkbox'] {
   min-height: max-content;
 }
 

@@ -39,6 +39,7 @@
 
           <div class="relative w-full sm:w-2/3 md:w-1/3 mt-3 md:mt-0 mb-3 md:mb-0">
             <input
+              @keypress.enter="onSearch"
               ref="searchBox"
               type="text"
               placeholder="Search"
@@ -86,7 +87,8 @@
 import { Options, Vue } from 'vue-class-component'
 import copy from 'copy-text-to-clipboard'
 import prettyBytes from 'pretty-bytes'
-import { useStore } from 'vuex'
+import { mapStores, useQnotes, useStats } from '@/store'
+import { Qnote } from '@/api/server.api'
 import { notify } from '@/plugin/notify'
 import { stringifyError, errorTitle } from '@/utils'
 import Icon from '@/components/Icon.vue'
@@ -94,8 +96,6 @@ import Badge from '@/components/Badge.vue'
 import Table from '@/components/Table.vue'
 import Loader from '@/components/Loader.vue'
 import ColorPallet from '@/components/ColorPallet.vue'
-
-type Qnote = { id: number; date: Date; tags: string[]; url?: string; text?: string; code?: string }
 
 @Options({
   components: {
@@ -105,9 +105,11 @@ type Qnote = { id: number; date: Date; tags: string[]; url?: string; text?: stri
     Loader,
     ColorPallet,
   },
+  computed: {
+    //...mapStores(useQnotes)
+  },
 })
 export default class Home extends Vue {
-  store = useStore()
   loading = true
   stats = {
     tq: { glyph: 'bookmark-alt', title: 'Total Qnotes', value: '0', text: '%v' },
@@ -117,24 +119,15 @@ export default class Home extends Vue {
   tags = {} as { [s: string]: string }
   tagPicker = '-1'
   selectTags = {} as { [s: string]: string }
-  items: Qnote[] = [
-    { id: 1, date: new Date(2021, 3, 10), tags: ['url', 'UI-Design', 'Creativity'], url: 'https://www.google.com/' },
-    { id: 2, date: new Date(), tags: ['url', 'UI-Design', 'Creativity'], url: 'https://www.google.com/' },
-    { id: 3, date: new Date(2021, 3, 9), tags: ['url', 'UI-Design', 'Creativity'], text: 'Hello world' },
-    {
-      id: 4,
-      date: new Date(2021, 3, 9),
-      tags: ['url', 'UI-Design', 'ui-Design', 'Creativity'],
-      text: 'Basic text a la destiap desd arizep diopati qistio xial ez',
-    },
-    {
-      id: 5,
-      date: new Date(),
-      tags: ['url', 'UI-Design', 'Creativity'],
-      code: 'npm install vue-prismjs --save\ncp ./cul abc\ntest\ntest',
-    },
-    { id: 6, date: new Date(2021, 3, 11), tags: ['url', 'UI-Design', 'Creativity'], url: 'https://www.google.com/' },
-  ]
+  items: Qnote[] = []
+
+  get qnotesStore() {
+    return mapStores(useQnotes).qnotesStore()
+  }
+
+  get statsStore() {
+    return mapStores(useStats).statsStore()
+  }
 
   beforeMount() {
     this.$watch('tagPicker', this.onTagPicker)
@@ -163,24 +156,35 @@ export default class Home extends Vue {
     })
   }
 
-  onSearch() {
-    console.log((this.$refs.searchBox as HTMLInputElement).value, Object.keys(this.selectTags))
-    this.fetchQnotes()
+  async onSearch() {
+    const q = (this.$refs.searchBox as HTMLInputElement).value.trim() || undefined
+    const tags = Object.values(this.selectTags).sort().join(';') || undefined
+    if (!q && !tags) return
+
+    this.loading = true
+    try {
+      await this.qnotesStore.searchQnotes(q, tags)
+      this.items = (this.qnotesStore.searchedQnotes as Qnote[]) || []
+    } catch (err) {
+      this.items = []
+      notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 3000 })
+    }
+    this.loading = false
   }
 
   onRowClick(row: Qnote) {
     const dataToCopy = row.url || row.text || row.code || ''
     if (dataToCopy) {
       copy(String(dataToCopy))
-      notify.show(`ID ${row.id} copied !`, { type: 'info', queue: false, duration: 1500 })
+      notify.show(`Row ${row.id} (${dataToCopy.slice(0, 20)}...) copied !`, { type: 'info', queue: false, duration: 1800 })
     }
   }
 
   async fetchQnotes() {
     this.loading = true
     try {
-      await this.store.dispatch('loadQnotes')
-      this.items = this.store.state.qnotes
+      await this.qnotesStore.fetchQnotes()
+      this.items = (this.qnotesStore.qnotes as Qnote[]) || []
     } catch (err) {
       this.items = []
       notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 3000 })
@@ -190,12 +194,12 @@ export default class Home extends Vue {
 
   async fetchStats() {
     try {
-      await this.store.dispatch('loadStats')
-      const tags = Object.keys(this.store.state.stats.all_tags || {})
+      await this.statsStore.fetchStats()
+      const tags = Object.keys(this.statsStore.stats?.all_tags || {})
       this.resetTagPicker(tags.sort())
-      this.stats.tq.value = this.store.state.stats.total_qnotes
+      this.stats.tq.value = String(this.statsStore.stats?.total_qnotes || 0)
       this.stats.tt.value = tags.length.toString()
-      this.stats.ds.value = prettyBytes(this.store.state.stats.db_size)
+      this.stats.ds.value = prettyBytes(this.statsStore.stats?.db_size || 0)
     } catch (err) {
       notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 3000 })
     }

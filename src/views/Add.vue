@@ -5,6 +5,10 @@
         <h2 class="my-4 text-2xl font-bold card-title">Add a Qnote</h2>
 
         <div class="w-full flex items-center justify-evenly flex-col md:flex-row">
+          <div v-show="!Object.keys(selectTags).length" class="flex justify-center w-full md:w-1/4">
+            No tags selected
+          </div>
+
           <ul v-show="Object.keys(selectTags).length" class="flex flex-wrap justify-center tags-list w-full md:w-1/4">
             <Badge
               v-for="(tag, key) in selectTags"
@@ -34,21 +38,14 @@
 
             <div
               v-show="searchTagFocus && Object.keys(matchTags).length"
-              class="absolute mt-1 z-10 card border border-accent-focus cursor-pointer bg-neutral w-full"
+              class="absolute mt-1 z-10 card rounded-none cursor-pointer bg-neutral w-full"
             >
               <div class="max-h-80 overflow-y-auto">
                 <li
                   v-for="(tag, key, idx) in matchTags"
                   :key="key"
                   @mousedown.prevent="onChoseTag(key)"
-                  class="
-                    px-4
-                    py-1
-                    whitespace-nowrap
-                    overflow-hidden overflow-ellipsis
-                    border-accent-focus border-opacity-70
-                    hover:bg-accent-focus hover:bg-opacity-70
-                  "
+                  class="px-4 py-1 whitespace-nowrap overflow-hidden overflow-ellipsis border-accent-focus border-opacity-70 hover:bg-accent-focus hover:bg-opacity-70"
                   :class="{ 'border-t': idx !== 0 }"
                 >
                   {{ tag }}
@@ -131,14 +128,13 @@
 <script lang="ts">
 import Prismjs from 'prismjs'
 import { Options, Vue } from 'vue-class-component'
-import { useStore } from 'vuex'
+import { mapStores, useQnotes, useStats } from '@/store'
+import { QnotePartial } from '@/api/server.api'
 import { notify } from '@/plugin/notify'
 import { stringifyError, errorTitle } from '@/utils'
 import Icon from '@/components/Icon.vue'
 import Badge from '@/components/Badge.vue'
 import MockupCode from '@/components/MockupCode.vue'
-
-type Qnote = { id: number; date: Date; tags: string[]; url?: string; text?: string; code?: string }
 
 @Options({
   components: {
@@ -148,7 +144,6 @@ type Qnote = { id: number; date: Date; tags: string[]; url?: string; text?: stri
   },
 })
 export default class Add extends Vue {
-  store = useStore()
   loading = true
   searchTag = ''
   searchTagFocus = false
@@ -159,6 +154,14 @@ export default class Add extends Vue {
   selectTags = {} as { [s: string]: string }
   languages = Object.keys(Prismjs.languages).sort()
   langPicker = 'bash'
+
+  get qnotesStore() {
+    return mapStores(useQnotes).qnotesStore()
+  }
+
+  get statsStore() {
+    return mapStores(useStats).statsStore()
+  }
 
   beforeMount() {
     this.fetchStats()
@@ -232,8 +235,8 @@ export default class Add extends Vue {
   async fetchStats() {
     this.loading = true
     try {
-      await this.store.dispatch('loadStats')
-      const tags = Object.keys(this.store.state.stats.all_tags || {})
+      await this.statsStore.fetchStats()
+      const tags = Object.keys(this.statsStore.stats?.all_tags || {})
       this.resetTagPicker(tags.sort())
     } catch (err) {
       notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 3000 })
@@ -245,23 +248,23 @@ export default class Add extends Vue {
     if (!this.url && !this.code && !this.text)
       notify.show('Please complete at least one field', { title: 'Warning', type: 'warning', duration: 4000 })
 
-    let qnotes = {} as { [s: string]: string }
-    if (this.url) qnotes.url = this.url
-    if (this.text) qnotes.text = this.text
+    const qnote: QnotePartial = { tags: '' }
+    if (this.url) qnote.url = this.url
+    if (this.text) qnote.text = this.text
     else if (this.code) {
-      qnotes.code = this.code
-      qnotes.code_lang = this.langPicker
+      qnote.code = this.code
+      qnote.code_lang = this.langPicker
     }
     const stringTags = Object.values(this.selectTags)
       .map((str) => str.trim())
       .filter((str) => str)
       .sort()
       .join(';')
-    if (stringTags) qnotes.tags = stringTags
+    if (stringTags) qnote.tags = stringTags
 
     this.loading = true
     try {
-      await this.store.dispatch('createQnote', qnotes)
+      await this.qnotesStore.createQnote(qnote)
       notify.show('New qnote added', { title: 'Success', type: 'success', duration: 3000 })
       this.clearInputs()
       await this.fetchStats()
