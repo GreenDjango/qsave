@@ -15,6 +15,7 @@ header("Access-Control-Max-Age: 3600");
 header("Access-Control-Allow-Headers: Content-Type, origin, accept, host, date, cookie, Access-Control-Allow-Headers, Authorization, X-Requested-With, API-key");
 
 include_once('JSONDB.php');
+include_once('router.php');
 include_once('utils.php');
 
 use \Jajo\JSONDB;
@@ -22,58 +23,28 @@ use \Jajo\JSONDB;
 define("STATS_DB", 'stats');
 define("QNOTES_DB", 'qnotes');
 define("RES_MAX", 50);
-// define("URL_PREFIX", '/projects/qsave/api');
+// define("URL_PREFIX", '/projects/qsave/api'); // TODO: use .env var
 define("URL_PREFIX", '/api');
 $json_db = new JSONDB(__DIR__);
-
-// if (!array_key_exists("HTTP_API_KEY", $_SERVER) || $_SERVER[""])
 
 main();
 
 function main()
 {
-	$get_routes = [
-		// constant("URL_PREFIX") => 'get_test',
-		constant("URL_PREFIX") . '/test' => 'get_test',
-		constant("URL_PREFIX") . '/stats' => 'get_stats',
-		constant("URL_PREFIX") . '/tags' => 'get_tags',
-		constant("URL_PREFIX") . '/qnote' => 'get_qnote',
-		constant("URL_PREFIX") . '/qnotes' => 'get_qnotes',
-		constant("URL_PREFIX") . '/search' => 'get_search'
-	];
-	$post_routes = [
-		constant("URL_PREFIX") . '/qnote' => 'add_qnote'
-	];
+	$router = new Router(constant("URL_PREFIX"));
 
-	if (array_key_exists("DOCUMENT_URI", $_SERVER))
-		$uri = "/" . trim($_SERVER['DOCUMENT_URI'], "\t\n\r\0\x0B/");
-	else
-		$uri = "/" . trim($_SERVER['SCRIPT_URL'], "\t\n\r\0\x0B/");
-	if (!isset($uri) || !$uri) exit_with(500, "Missing URI.");
+	$router->add_route(Router::GET, '/test', 'get_test');
+	$router->add_route(Router::GET, '/stats', 'get_stats');
+	$router->add_route(Router::GET, '/tags', 'get_tags');
+	$router->add_route(Router::GET, '/qnote', 'get_qnote');
+	$router->add_route(Router::GET, '/qnotes', 'get_qnotes');
+	$router->add_route(Router::GET, '/search', 'get_search');
 
-	switch ($_SERVER['REQUEST_METHOD']) {
-		case 'GET':
-			if (array_key_exists($uri, $get_routes)) {
-				$get_routes[$uri]($uri);
-				exit_with(200, "Success.");
-			}
-			exit_with(404, "Not Found.");
-			break;
-		case 'POST':
-			if (array_key_exists($uri, $post_routes)) {
-				$post_routes[$uri]($uri);
-				exit_with(200, "Success.");
-			}
-			exit_with(404, "Not Found.");
-			break;
-		case 'OPTIONS':
-			http_response_code(204);
-			exit(0);
-			break;
-		default:
-			break;
-	}
-	exit_with(405, "Method not allowed.");
+	$router->add_route(Router::POST, '/qnote', 'add_qnote', true);
+
+	$router->call_request_route();
+
+	exit_with(200, "Success.");
 }
 
 function get_test()
@@ -170,7 +141,7 @@ function get_search()
 			$keys = ["url", "text", "code"];
 			foreach ($keys as $key) {
 				$reg = "/" . preg_quote($q_arg, '/') . "/i";
-				if (array_key_exists($key, $qnote) && preg_match($reg, $qnote[$key])) return true;
+				if (key_exists($key, $qnote) && preg_match($reg, $qnote[$key])) return true;
 			}
 			return false;
 		});
@@ -239,24 +210,29 @@ function generate_stats()
 	$all_tags = [];
 	foreach ($qnotes as $id => $qnote) {
 		//$qnote_arr = (array) $qnote;
-		if (array_key_exists("tags", $qnote)) {
+		if (key_exists("tags", $qnote)) {
 			$tags = string_to_tags($qnote["tags"]);
 			foreach ($tags as $id2 => $tag) {
-				if (array_key_exists($tag, $all_tags)) $all_tags[$tag] += 1;
+				if (key_exists($tag, $all_tags)) $all_tags[$tag] += 1;
 				else $all_tags[$tag] = 1;
 			}
 		}
 	}
 	array_multisort($all_tags);
 
+	$older_qnote = end($qnotes);
+	if ($older_qnote) $older_qnote = retrieve_qnote((array) $older_qnote);
+	else $older_qnote = null;
+	reset($qnotes);
+
 	$last_qnote = current($qnotes);
 	if ($last_qnote) $last_qnote = retrieve_qnote((array) $last_qnote);
-	// if (array_key_exists(0, $qnotes) && array_key_exists("date" ,$qnotes[0]))
-	// 	$last_qnote = $qnotes[0]["date"];
+	else $last_qnote = null;
 
 	$json_db->update([
 		'total_qnotes' => count($qnotes),
 		'last_qnote' => $last_qnote,
+		'older_qnote' => $older_qnote,
 		'last_update' => $now->format(DateTime::ISO8601),
 		'all_tags' => $all_tags,
 		'db_size' => filesize(constant("QNOTES_DB") . ".json")
