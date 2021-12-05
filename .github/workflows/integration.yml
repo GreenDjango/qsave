@@ -32,11 +32,17 @@ jobs:
 
       - name: curl /
         run: |
-          curl --location --request GET 'http://localhost:8081'
+          curl --head --location --silent --fail --request GET 'http://localhost:8081'
+          sleep 1
+
+      - name: curl /api/qnotes
+        run: |
+          curl --head --location --silent --fail --request GET 'http://localhost:8081/api/qnotes'
+          sleep 1
 
       - name: docker-compose down
         run: |
-          docker-compose down
+          docker-compose down -v
 
       - name: save docker cache
         run: |

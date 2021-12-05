@@ -4,8 +4,7 @@
       <span class="label-text self-end">Your code</span>
       <select
         :value="langPicker"
-        @input="$emit(`update:langPicker`, $event)"
-        v-model="langPicker"
+        @change="$emit(`update:langPicker`, $event.target.value)"
         :disabled="disabled"
         class="select select-bordered select-sm pr-7 label-text-alt"
       >
