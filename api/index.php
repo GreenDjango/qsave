@@ -33,7 +33,7 @@ function main()
 {
 	$router = new Router(constant("URL_PREFIX"));
 
-	$router->add_route(Router::GET, '/test', 'get_test');
+	// $router->add_route(Router::GET, '/test', 'get_test');
 	$router->add_route(Router::GET, '/stats', 'get_stats');
 	$router->add_route(Router::GET, '/tags', 'get_tags');
 	$router->add_route(Router::GET, '/qnote', 'get_qnote');
