@@ -1,8 +1,11 @@
 <template>
   <div class="home grid grid-cols-1 gap-6 px-8 py-5 max-w-screen-2xl mx-auto">
+    <Dialog ref="confirmDelete" title="Confirm Delete" validText="Delete" refuseText="Cancel" @valid="deleteQnote">
+      <div class="text-center text-md text-base-content opacity-80">Are you sure you want to delete this Qnote?</div>
+    </Dialog>
     <div class="card col-span-1 row-span-3 shadow-lg bg-base-100">
       <div class="card-body px-6">
-        <h2 class="my-4 text-2xl font-bold card-title">Add a Qnote</h2>
+        <h2 class="my-4 text-2xl font-bold card-title">Update a Qnote</h2>
 
         <div class="w-full flex items-center justify-evenly flex-col md:flex-row">
           <div v-show="!selectTags.length" class="flex justify-center w-full md:w-1/4">No tags selected</div>
@@ -35,7 +38,7 @@
               </label>
               <textarea
                 class="textarea textarea-primary textarea-bordered h-32 bg-neutral w-full"
-                :disabled="code.length"
+                :disabled="code.length && !text.length"
                 placeholder="Text"
                 v-model.trim="text"
               ></textarea>
@@ -46,14 +49,25 @@
             <CodeInput v-model.trim="code" v-model:langPicker="langPicker" :disabled="!!text.length" class="flex-grow" />
           </div>
 
-          <button
-            class="btn btn-primary w-max place-self-end mt-4"
-            :class="{ loading: loading }"
-            :disabled="!canSubmit"
-            @click="createQnote"
-          >
-            submit
-          </button>
+          <div class="flex flex-row justify-between mt-4">
+            <button class="btn w-max justify-self-start" @click="$router.back()">back</button>
+            <div class="flex flex-row justify-end gap-4">
+              <button class="btn w-max" :class="{ loading: loading }" :disabled="loading" @click="refreshQnote">
+                reset change
+              </button>
+              <button
+                class="btn btn-warning w-max"
+                :class="{ loading: loading }"
+                :disabled="loading"
+                @click="$refs.confirmDelete.showDialog()"
+              >
+                delete
+              </button>
+              <button class="btn btn-primary w-max" :class="{ loading: loading }" :disabled="!canSubmit" @click="updateQnote">
+                submit
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -71,6 +85,7 @@ import Badge from '@/components/atoms/Badge.vue'
 import TagPicker from '@/components/molecules/TagPicker.vue'
 import UrlInput from '@/components/molecules/UrlInput.vue'
 import CodeInput from '@/components/molecules/CodeInput.vue'
+import Dialog from '@/components/organisms/Dialog.vue'
 
 @Options({
   components: {
@@ -79,10 +94,20 @@ import CodeInput from '@/components/molecules/CodeInput.vue'
     TagPicker,
     UrlInput,
     CodeInput,
+    Dialog,
+  },
+  props: {
+    propId: String,
+  },
+  watch: {
+    qnoteID: function (newValue) {
+      this.fetchQnote(newValue)
+    },
   },
 })
-export default class Add extends Vue {
-  loading = false
+export default class Editor extends Vue {
+  propId = ''
+  loading = true
   isURLFriendly = true
   url = ''
   text = ''
@@ -100,6 +125,14 @@ export default class Add extends Vue {
     return mapStores(usePopup).popupStore()
   }
 
+  beforeMount() {
+    this.refreshQnote()
+  }
+
+  get qnoteID() {
+    return Number(this.propId)
+  }
+
   clearInputs() {
     this.url = ''
     this.text = ''
@@ -107,11 +140,47 @@ export default class Add extends Vue {
     this.langPicker = 'bash'
   }
 
+  // Fetch data
+  async refreshQnote() {
+    await this.fetchQnote(this.qnoteID)
+  }
+
+  async fetchQnote(qnoteID: number) {
+    this.loading = true
+    try {
+      const qnote = await this.qnotesStore.fetchQnote(qnoteID)
+      if (!qnote) {
+        const error = Error('Qnote not found.') as Error & { status?: number }
+        error.status = 404
+        throw error
+      }
+
+      if (qnote.url) this.url = qnote.url
+      if (qnote.code) this.code = qnote.code
+      if (qnote.text) this.text = qnote.text
+      if (qnote.code_lang) this.langPicker = qnote.code_lang
+      ;(<any>this.$refs).tagPicker.setSelectTags(...(qnote.tags || []))
+      ;(<any>this.$refs).tagPicker.fetchTags()
+    } catch (err: any) {
+      notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 3000 })
+      if (err.status === 404 || err.response.status === 404) {
+        this.$router.replace({
+          name: 'NotFound',
+          params: { catchAll: this.$route.path.substring(1) },
+          query: this.$route.query,
+          hash: this.$route.hash,
+          path: this.$route.path,
+        })
+      }
+    }
+    this.loading = false
+  }
+
   get canSubmit() {
     return (this.url || this.code || this.text) && !this.loading && this.isURLFriendly
   }
 
-  async createQnote() {
+  async updateQnote() {
     if (!this.url && !this.code && !this.text) {
       notify.show('Please complete at least one field', { title: 'Warning', type: 'warning', duration: 4000 })
       return
@@ -122,22 +191,38 @@ export default class Add extends Vue {
       return
     }
 
-    const qnote: QnotePartial = { tags: [] }
-    if (this.url) qnote.url = this.url
-    if (this.text) qnote.text = this.text
-    else if (this.code) {
-      qnote.code = this.code
-      qnote.code_lang = this.langPicker
+    const qnote: QnotePartial = {
+      tags: this.selectTags.sort(),
+      url: this.url,
+      text: this.text,
+      code: this.code,
+      code_lang: this.langPicker,
     }
-    if (this.selectTags.length) qnote.tags = this.selectTags.sort()
 
     this.loading = true
     try {
-      await this.qnotesStore.createQnote(qnote)
-      notify.show('New qnote added', { title: 'Success', type: 'success', duration: 3000 })
+      await this.qnotesStore.updateQnote(this.qnoteID, qnote)
+      notify.show('Qnote updated', { title: 'Success', type: 'success', duration: 3000 })
       this.clearInputs()
-      ;(<any>this.$refs).tagPicker.setSelectTags()
-      ;(<any>this.$refs).tagPicker.fetchTags()
+      await this.refreshQnote()
+    } catch (err) {
+      notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 4000 })
+    }
+    this.loading = false
+  }
+
+  async deleteQnote() {
+    if (!this.authStore.apiKey) {
+      this.popupStore.$patch({ hasNeedCredential: true })
+      return
+    }
+
+    this.loading = true
+    try {
+      await this.qnotesStore.deleteQnote(this.qnoteID)
+      notify.show('Qnote deleted', { title: 'Success', type: 'success', duration: 3000 })
+      this.clearInputs()
+      this.$router.replace({ name: 'Home' })
     } catch (err) {
       notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 4000 })
     }
@@ -152,5 +237,15 @@ export default class Add extends Vue {
   --tw-bg-opacity: 0.4;
   background-color: hsla(var(--p) / var(--tw-bg-opacity, 1));
   color: hsla(var(--pc) / var(--tw-text-opacity, 1));
+}
+
+.btn-warning {
+  --tw-bg-opacity: 0.7;
+  --tw-border-opacity: 0.7;
+}
+
+.btn-warning:hover {
+  --tw-bg-opacity: 0.6;
+  --tw-border-opacity: 0.6;
 }
 </style>

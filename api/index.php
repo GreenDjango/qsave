@@ -10,7 +10,7 @@ if (false) {
 http_response_code(500);
 header("Access-Control-Allow-Origin: *");
 //header("Access-Control-Allow-Credentials: true"); // need Allow-Origin != *
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS");
 header("Access-Control-Max-Age: 3600");
 header("Access-Control-Allow-Headers: Content-Type, origin, accept, host, date, cookie, Access-Control-Allow-Headers, Authorization, X-Requested-With, API-key");
 
@@ -40,7 +40,10 @@ function main()
 	$router->add_route(Router::GET, '/qnotes', 'get_qnotes');
 	$router->add_route(Router::GET, '/search', 'get_search');
 
-	$router->add_route(Router::POST, '/qnote', 'add_qnote', true);
+	$router->add_route(Router::POST, '/qnote/create', 'add_qnote', true);
+	$router->add_route(Router::POST, '/qnote/update', 'update_qnote', true);
+
+	$router->add_route(Router::DELETE, '/qnote', 'delete_qnote', true);
 
 	$router->call_request_route();
 
@@ -195,6 +198,84 @@ function add_qnote()
 	generate_stats();
 
 	exit_with(201, "Created.");
+}
+
+function update_qnote()
+{
+	global $json_db;
+
+	$id_arg = parse_param_number("qnoteID");
+	if (!$id_arg)
+		exit_with(400, "'qnoteID' parameter are need.");
+	$id_arg = (int)$id_arg;
+
+	$qnotes = (array) $json_db->select('*')
+		->from(constant("QNOTES_DB"))
+		->where(['id' => $id_arg])
+		->get();
+
+	$qnote = current($qnotes);
+	if (!$qnote)
+		exit_with(404, "Qnote not found.");
+
+	$tags_arg = parse_param_string("tags");
+	if ($tags_arg !== false) {
+		$tags_arg = clean_tags($tags_arg);
+		$qnote["tags"] = $tags_arg;
+	}
+
+	$url_arg = parse_param_string("url");
+	$text_arg = parse_param_string("text");
+	$code_arg = parse_param_string("code");
+	$code_lang_arg = parse_param_string("code_lang");
+
+	if ($url_arg !== false) $qnote["url"] = $url_arg;
+	if ($text_arg !== false) $qnote["text"] = $text_arg;
+	if ($code_arg !== false) {
+		$qnote["code"] = $code_arg;
+		$qnote["code_lang"] = "plaintext";
+	}
+	if ($code_lang_arg) $qnote["code_lang"] = $code_lang_arg;
+
+	if (!$qnote["url"] && !$qnote["text"] && !$qnote["code"])
+		exit_with(400, "'url' or 'text' or 'code' parameters are need.");
+
+	$json_db->update($qnote)
+		->from(constant("QNOTES_DB"))
+		->where(['id' => $id_arg])
+		->trigger();
+
+	generate_stats();
+
+	exit_with(200, "Updated.");
+}
+
+function delete_qnote()
+{
+	global $json_db;
+
+	$id_arg = parse_param_number("qnoteID");
+	if (!$id_arg)
+		exit_with(400, "'qnoteID' parameter are need.");
+	$id_arg = (int)$id_arg;
+
+	$qnotes = (array) $json_db->select('*')
+		->from(constant("QNOTES_DB"))
+		->where(['id' => $id_arg])
+		->get();
+
+	$qnote = current($qnotes);
+	if (!$qnote)
+		exit_with(404, "Qnote not found.");
+
+	$json_db->delete()
+		->from(constant("QNOTES_DB"))
+		->where(['id' => $id_arg])
+		->trigger();
+
+	generate_stats();
+
+	exit_with(200, "Deleted.");
 }
 
 function generate_stats()

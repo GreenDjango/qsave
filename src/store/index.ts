@@ -1,15 +1,21 @@
 import { createPinia, defineStore } from 'pinia'
-// import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
-import { apiServer, Qnote, QnotePartial, Stats } from '@/api/server.api'
+import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
+import { ApiServer, apiServer, Qnote, QnotePartial, Stats, Tags } from '@/api/server.api'
 
 const pinia = createPinia()
+pinia.use(piniaPluginPersistedstate)
 
-// pinia.use(piniaPluginPersistedstate)
+// Auth
+export const useAuth = defineStore('auth', {
+  persist: true,
+
+  state: () => ({ ...{ apiKey: null as null | string } }),
+
+  actions: {},
+})
 
 // Stats
 export const useStats = defineStore('stats', {
-  // persist: true,
-
   state: () => ({ ...{ stats: null as null | Stats, needReload: false } }),
 
   actions: {
@@ -17,15 +23,29 @@ export const useStats = defineStore('stats', {
       if (!force && !this.needReload && this.stats) return
       const res = await apiServer.fetchStats()
       const { stats } = res.data
+      if (stats?.last_qnote) ApiServer.populateQnote(stats.last_qnote)
+      if (stats?.older_qnote) ApiServer.populateQnote(stats.older_qnote)
       if (stats) this.$patch({ stats, needReload: false })
+    },
+  },
+})
+
+// Tags
+export const useTags = defineStore('tags', {
+  state: () => ({ ...{ tags: null as null | Tags, needReload: false } }),
+
+  actions: {
+    async fetchStats(force = false) {
+      if (!force && !this.needReload && this.tags) return
+      const res = await apiServer.fetchTags()
+      const { tags } = res.data
+      if (tags) this.$patch({ tags, needReload: false })
     },
   },
 })
 
 // Qnotes
 export const useQnotes = defineStore('qnotes', {
-  // persist: true,
-
   state: () => ({
     ...{
       qnotes: null as null | Qnote[],
@@ -41,9 +61,7 @@ export const useQnotes = defineStore('qnotes', {
         data: { qnotes },
       } = await apiServer.fetchQnotes()
       if (qnotes) {
-        for (const qnote of qnotes) {
-          if (qnote.date) qnote.parseDate = new Date(qnote.date)
-        }
+        ApiServer.populateQnote(...qnotes)
         this.$patch({ qnotes, needReload: false })
       }
     },
@@ -52,8 +70,8 @@ export const useQnotes = defineStore('qnotes', {
       const {
         data: { qnote },
       } = await apiServer.fetchQnote(qnoteID)
-      if (qnote.date) qnote.parseDate = new Date(qnote.date)
-      return qnote
+      if (qnote) ApiServer.populateQnote(qnote)
+      return qnote as Qnote | null
     },
 
     async searchQnotes(q?: string, tags?: string) {
@@ -61,9 +79,7 @@ export const useQnotes = defineStore('qnotes', {
         data: { qnotes },
       } = await apiServer.searchQnotes(q, tags)
       if (qnotes) {
-        for (const qnote of qnotes) {
-          if (qnote.date) qnote.parseDate = new Date(qnote.date)
-        }
+        ApiServer.populateQnote(...qnotes)
         this.$patch({ searchedQnotes: qnotes })
       }
     },
@@ -71,19 +87,37 @@ export const useQnotes = defineStore('qnotes', {
     async createQnote(qnote: QnotePartial) {
       const { data } = await apiServer.createQnote(qnote)
       if (data && data.message) {
-        this.$patch({ needReload: true })
-        const statsStore = useStats()
-        statsStore.$patch({ needReload: true })
+        this.onQnotesChange()
       }
+    },
+
+    async updateQnote(qnoteID: number, qnote: QnotePartial) {
+      const { data } = await apiServer.updateQnote(qnoteID, qnote)
+      if (data && data.message) {
+        this.onQnotesChange()
+      }
+    },
+
+    async deleteQnote(qnoteID: number) {
+      const { data } = await apiServer.deleteQnote(qnoteID)
+      if (data && data.message) {
+        this.onQnotesChange()
+      }
+    },
+
+    onQnotesChange() {
+      const statsStore = useStats()
+      const tagsStore = useTags()
+      this.$patch({ needReload: true })
+      statsStore.$patch({ needReload: true })
+      tagsStore.$patch({ needReload: true })
     },
   },
 })
 
 // Popup
 export const usePopup = defineStore('popup', {
-  // persist: false,
-
-  state: () => ({ ...{ is401: false } }),
+  state: () => ({ ...{ is401: false, hasNeedCredential: false } }),
 
   actions: {},
 })

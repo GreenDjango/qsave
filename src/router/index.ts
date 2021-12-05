@@ -7,13 +7,13 @@ const routes: Array<RouteRecordRaw> = [
     name: 'Home',
     component: Home,
   },
-  // {
-  //     path: '/editor/:id?',
-  //     name: 'Editor',
-  //     meta: { needAuth: true },
-  //     component: () => import(/* webpackChunkName: "editor" */ '../views/Editor.vue'),
-  //     props: true,
-  // },
+  {
+    path: '/editor/:propId(\\d+)',
+    name: 'Editor',
+    // meta: { needAuth: true },
+    component: () => import(/* webpackChunkName: "editor" */ '../views/Editor.vue'),
+    props: true,
+  },
   {
     path: '/add',
     name: 'Add',

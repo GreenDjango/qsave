@@ -27,7 +27,6 @@ function parse_param_string(string $key) {
 	if (!is_string($raw_value))
 		exit_with(400, "'" . $key . "' parameter need to be a string.");
 	$value = clean_string($raw_value);
-	if (!$value) return false;
 	return $value;
 }
 

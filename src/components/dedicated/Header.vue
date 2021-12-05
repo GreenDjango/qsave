@@ -1,8 +1,8 @@
 <template>
   <div class="navbar shadow-lg bg-neutral-focus text-neutral-content">
     <div class="flex-none">
-      <button v-on:click="reloadPage" class="btn btn-ghost flex px-2">
-        <img src="../assets/logo.svg" class="inline-block w-10 h-10 mr-3" alt="qsave logo" />
+      <button @click="reloadPage" class="btn btn-ghost flex px-2">
+        <img src="@/assets/logo.svg" class="inline-block w-10 h-10 mr-3" alt="qsave logo" />
         <span class="site-title text-2xl font-bold normal-case">Qsave</span>
       </button>
     </div>
@@ -28,7 +28,7 @@
 
 <script lang="ts">
 import { Options, Vue } from 'vue-class-component'
-import Icon from '@/components/Icon.vue'
+import Icon from '@/components/atoms/Icon.vue'
 
 @Options({
   components: { Icon },

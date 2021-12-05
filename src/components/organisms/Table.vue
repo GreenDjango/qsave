@@ -50,8 +50,8 @@
       >
         <td rowspan="1" colspan="1" class="text-center">{{ item.id }}</td>
 
-        <td rowspan="1" colspan="1" class="text-center" :title="item.parseDate.toUTCString()">
-          {{ item.parseDate.toDateString().slice(4) }}
+        <td rowspan="1" colspan="1" class="text-center" :title="item.parseDate?.toUTCString()">
+          {{ item.parseDate?.toDateString()?.slice(4) }}
         </td>
 
         <td rowspan="1" colspan="1">
@@ -106,9 +106,14 @@
         </td>
 
         <td rowspan="1" colspan="1">
-          <button @click.stop="" class="btn btn-square btn-sm" aria-label="edit row">
+          <router-link
+            :to="{ name: 'Editor', params: { propId: item.id } }"
+            @click.stop=""
+            class="btn btn-square btn-sm"
+            :aria-label="'edit row ' + item.id"
+          >
             <Icon glyph="pencil-alt" class="inline-block w-4 stroke-current" />
-          </button>
+          </router-link>
         </td>
       </tr>
     </tbody>
@@ -118,9 +123,9 @@
 <script lang="ts">
 import { Options, Vue } from 'vue-class-component'
 import { Qnote } from '@/api/server.api'
-import Icon from '@/components/Icon.vue'
-import Badge from '@/components/Badge.vue'
-import MockupCode from '@/components/MockupCode.vue'
+import Icon from '@/components/atoms/Icon.vue'
+import Badge from '@/components/atoms/Badge.vue'
+import MockupCode from '@/components/molecules/MockupCode.vue'
 
 enum DataType {
   URL = 'URL',
@@ -139,6 +144,7 @@ type LocalQnote = Qnote & { collapse: boolean; type: DataType }
     Badge,
     MockupCode,
   },
+  emits: ['row-click'],
   props: {
     items: Array,
   },
@@ -203,7 +209,7 @@ export default class Table extends Vue {
   }
 
   onRowClick(row: Qnote) {
-    this.$emit('rowClick', row)
+    this.$emit('row-click', row)
   }
 }
 </script>

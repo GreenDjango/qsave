@@ -6,7 +6,7 @@
 
 <script lang="ts">
 import { Options, Vue } from 'vue-class-component'
-import Prism from '@/components/Prism.vue'
+import Prism from '@/components/atoms/Prism.vue'
 import 'prismjs/themes/prism-tomorrow.css'
 
 @Options({

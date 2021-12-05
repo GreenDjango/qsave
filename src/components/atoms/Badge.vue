@@ -8,7 +8,7 @@
 <script lang="ts">
 import { Options, Vue } from 'vue-class-component'
 import { sha256 } from 'hash.js'
-import Icon from '@/components/Icon.vue'
+import Icon from '@/components/atoms/Icon.vue'
 
 @Options({
   props: {

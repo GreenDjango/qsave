@@ -22,24 +22,28 @@ import heroicons from '@/assets/heroicons'
 @Options({
   props: {
     glyph: String,
-    id: Number,
+    iconId: Number,
     color: String,
   },
 })
 export default class Icon extends Vue {
   icons = heroicons
   glyph?: string
-  id?: number
+  iconId?: number
   color?: string
 
   get icon() {
     let icon = undefined
     if (this.glyph) {
       icon = this.icons.find((val) => val.name === this.glyph)
-    } else if (this.id && this.icons[this.id]) {
-      icon = this.icons[this.id]
+    } else if (this.iconId && this.icons[this.iconId]) {
+      icon = this.icons[this.iconId]
     }
-    return icon || this.icons[0]
+    if (!icon) {
+      console.warn(`Icon '${this.glyph || this.iconId}' not found.`)
+      return this.icons[0]
+    }
+    return icon
   }
 }
 </script>

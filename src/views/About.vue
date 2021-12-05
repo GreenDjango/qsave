@@ -4,7 +4,7 @@
       <div class="max-w-md">
         <h1 class="mb-5 text-4xl font-bold">Qsave</h1>
         <p class="mb-5 text-lg">Save your links and code samples in 1sec!</p>
-        <router-link :to="{ name: 'Home' }" class="btn btn-primary"> Add a Qnote </router-link>
+        <router-link :to="{ name: 'Add' }" class="btn btn-primary"> Add a Qnote </router-link>
       </div>
     </div>
   </div>

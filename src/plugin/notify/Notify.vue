@@ -25,7 +25,7 @@
 
 <script>
 import Events from './events.js'
-import Icon from '@/components/Icon.vue'
+import Icon from '@/components/atoms/Icon.vue'
 
 export default {
   name: 'Notify',

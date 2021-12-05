@@ -11,10 +11,12 @@ class Router
 
 	public $uri_prefix = null;
 	private $routes = [];
+	private $auth_key;
 
 	public function __construct(string $uri_prefix = null)
 	{
 		$this->uri_prefix = $uri_prefix;
+		$this->auth_key = "";
 	}
 
 	public function add_route(string $method, string $path, string $callback, bool $need_auth = false)
@@ -41,7 +43,7 @@ class Router
 
 	public function call_route(string $method, string $uri)
 	{
-		if ($method == 'OPTIONS') {
+		if ($method === 'OPTIONS') {
 			http_response_code(204);
 			exit(0);
 		}
@@ -55,8 +57,8 @@ class Router
 		$route = $this->routes[$method][$uri];
 		
 		if (key_exists('need_auth', $route) && $route['need_auth']) {
-			exit_with(401, "Not Auth.");
-			// if (!key_exists("HTTP_API_KEY", $_SERVER) || $_SERVER[""])
+			if (!key_exists("HTTP_API_KEY", $_SERVER) || $_SERVER["HTTP_API_KEY"] !== $this->auth_key)
+				exit_with(401, "Unauthorized.");
 		}
 
 		$route['callback']($uri);

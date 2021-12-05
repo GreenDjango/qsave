@@ -2,6 +2,8 @@
 
 #### Save your links and code samples in 1sec!
 
+![Screenshot of the Qsave home page](screenshots/Screenshot_Home_Qsave.png)
+
 ### 💾 Install Docker Compose
 
 *(Need docker)*

@@ -8,7 +8,7 @@
           </div>
           <div class="stat-title">{{ stat.title }}</div>
           <div class="stat-value">{{ stat.text.replace('%v', stat.value) }}</div>
-          <div class="stat-desc">↗︎ 21% more than last month</div>
+          <div class="stat-desc">{{ stat.subText.replace('%v', stat.subValue) }}</div>
         </div>
       </div>
     </div>
@@ -91,11 +91,11 @@ import { mapStores, useQnotes, useStats } from '@/store'
 import { Qnote } from '@/api/server.api'
 import { notify } from '@/plugin/notify'
 import { stringifyError, errorTitle } from '@/utils'
-import Icon from '@/components/Icon.vue'
-import Badge from '@/components/Badge.vue'
-import Table from '@/components/Table.vue'
-import Loader from '@/components/Loader.vue'
-import ColorPallet from '@/components/ColorPallet.vue'
+import Icon from '@/components/atoms/Icon.vue'
+import Badge from '@/components/atoms/Badge.vue'
+import Table from '@/components/organisms/Table.vue'
+import Loader from '@/components/atoms/Loader.vue'
+import ColorPallet from '@/components/dedicated/ColorPallet.vue'
 
 @Options({
   components: {
@@ -112,9 +112,9 @@ import ColorPallet from '@/components/ColorPallet.vue'
 export default class Home extends Vue {
   loading = true
   stats = {
-    tq: { glyph: 'bookmark-alt', title: 'Total Qnotes', value: '0', text: '%v' },
-    tt: { glyph: 'tag', title: 'Total tags', value: '0', text: '%v' },
-    ds: { glyph: 'database', title: 'Database size', value: '0', text: '%v' },
+    tq: { glyph: 'bookmark-alt', title: 'Total Qnotes', value: '0', text: '%v', subValue: 'none', subText: '↗︎ latest qnote: %v' },
+    tt: { glyph: 'tag', title: 'Total tags', value: '0', text: '%v', subValue: 'none', subText: '↗︎ more use tag: %v' },
+    ds: { glyph: 'database', title: 'Database size', value: '0 kB', text: '%v', subValue: 'none', subText: '↘ oldest qnote: %v' },
   }
   tags = {} as { [s: string]: string }
   tagPicker = '-1'
@@ -195,11 +195,19 @@ export default class Home extends Vue {
   async fetchStats() {
     try {
       await this.statsStore.fetchStats()
+
       const tags = Object.keys(this.statsStore.stats?.all_tags || {})
       this.resetTagPicker(tags.sort())
+
       this.stats.tq.value = String(this.statsStore.stats?.total_qnotes || 0)
+      this.stats.tq.subValue = this.statsStore.stats?.last_qnote?.parseDate?.toDateString()?.slice(4) || 'none'
+
+      const bestTag = Object.entries(this.statsStore.stats?.all_tags || {}).sort(([_a, a], [_b, b]) => b - a)[0]
       this.stats.tt.value = tags.length.toString()
+      this.stats.tt.subValue = bestTag?.[0] || 'none'
+
       this.stats.ds.value = prettyBytes(this.statsStore.stats?.db_size || 0)
+      this.stats.ds.subValue = this.statsStore.stats?.older_qnote?.parseDate?.toDateString()?.slice(4) || 'none'
     } catch (err) {
       notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 3000 })
     }
