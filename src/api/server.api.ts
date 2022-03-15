@@ -41,6 +41,7 @@ class ApiServer {
     this.instance.interceptors.request.use(function (config) {
       const auth = useAuth()
       if (auth.apiKey) {
+        if (!config.headers) config.headers = {}
         config.headers['API-key'] = `${auth.apiKey}`
       }
       return config
