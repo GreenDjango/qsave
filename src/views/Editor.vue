@@ -75,7 +75,7 @@
 </template>
 
 <script lang="ts">
-import { Options, Vue } from 'vue-class-component'
+import { defineComponent } from 'vue'
 import { mapStores, useQnotes, useAuth, usePopup } from '@/store'
 import { QnotePartial } from '@/api/server.api'
 import { notify } from '@/plugin/notify'
@@ -87,7 +87,7 @@ import UrlInput from '@/components/molecules/UrlInput.vue'
 import CodeInput from '@/components/molecules/CodeInput.vue'
 import Dialog from '@/components/organisms/Dialog.vue'
 
-@Options({
+export default defineComponent({
   components: {
     Icon,
     Badge,
@@ -97,138 +97,143 @@ import Dialog from '@/components/organisms/Dialog.vue'
     Dialog,
   },
   props: {
-    propId: String,
+    propId: {
+      type: String,
+      default: '',
+    },
+  },
+  data() {
+    return {
+      loading: true,
+      isURLFriendly: true,
+      url: '',
+      text: '',
+      code: '',
+      selectTags: [] as string[],
+      langPicker: 'bash',
+    }
   },
   watch: {
-    qnoteID: function (newValue) {
+    qnoteID(newValue) {
       this.fetchQnote(newValue)
     },
   },
-})
-export default class Editor extends Vue {
-  propId = ''
-  loading = true
-  isURLFriendly = true
-  url = ''
-  text = ''
-  code = ''
-  selectTags = [] as string[]
-  langPicker = 'bash'
+  computed: {
+    qnotesStore() {
+      return mapStores(useQnotes).qnotesStore()
+    },
+    authStore() {
+      return mapStores(useAuth).authStore()
+    },
+    popupStore() {
+      return mapStores(usePopup).popupStore()
+    },
 
-  get qnotesStore() {
-    return mapStores(useQnotes).qnotesStore()
-  }
-  get authStore() {
-    return mapStores(useAuth).authStore()
-  }
-  get popupStore() {
-    return mapStores(usePopup).popupStore()
-  }
+    qnoteID() {
+      return Number(this.propId)
+    },
 
+    canSubmit() {
+      return (this.url || this.code || this.text) && !this.loading && this.isURLFriendly
+    },
+  },
   beforeMount() {
     this.refreshQnote()
-  }
+  },
+  methods: {
+    clearInputs() {
+      this.url = ''
+      this.text = ''
+      this.code = ''
+      this.langPicker = 'bash'
+    },
 
-  get qnoteID() {
-    return Number(this.propId)
-  }
+    // Fetch data
+    async refreshQnote() {
+      await this.fetchQnote(this.qnoteID)
+    },
 
-  clearInputs() {
-    this.url = ''
-    this.text = ''
-    this.code = ''
-    this.langPicker = 'bash'
-  }
+    async fetchQnote(qnoteID: number) {
+      this.loading = true
+      try {
+        const qnote = await this.qnotesStore.fetchQnote(qnoteID)
+        if (!qnote) {
+          const error = Error('Qnote not found.') as Error & { status?: number }
+          error.status = 404
+          throw error
+        }
 
-  // Fetch data
-  async refreshQnote() {
-    await this.fetchQnote(this.qnoteID)
-  }
+        if (qnote.url) this.url = qnote.url
+        if (qnote.code) this.code = qnote.code
+        if (qnote.text) this.text = qnote.text
+        if (qnote.code_lang) this.langPicker = qnote.code_lang
+        ;(<any>this.$refs).tagPicker.setSelectTags(...(qnote.tags || []))
+        ;(<any>this.$refs).tagPicker.fetchTags()
+      } catch (err: any) {
+        notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 3000 })
+        if (err.status === 404 || err.response.status === 404) {
+          this.$router.replace({
+            name: 'NotFound',
+            params: { catchAll: this.$route.path.substring(1) },
+            query: this.$route.query,
+            hash: this.$route.hash,
+            path: this.$route.path,
+          })
+        }
+      }
+      this.loading = false
+    },
 
-  async fetchQnote(qnoteID: number) {
-    this.loading = true
-    try {
-      const qnote = await this.qnotesStore.fetchQnote(qnoteID)
-      if (!qnote) {
-        const error = Error('Qnote not found.') as Error & { status?: number }
-        error.status = 404
-        throw error
+    async updateQnote() {
+      if (!this.url && !this.code && !this.text) {
+        notify.show('Please complete at least one field', { title: 'Warning', type: 'warning', duration: 4000 })
+        return
       }
 
-      if (qnote.url) this.url = qnote.url
-      if (qnote.code) this.code = qnote.code
-      if (qnote.text) this.text = qnote.text
-      if (qnote.code_lang) this.langPicker = qnote.code_lang
-      ;(<any>this.$refs).tagPicker.setSelectTags(...(qnote.tags || []))
-      ;(<any>this.$refs).tagPicker.fetchTags()
-    } catch (err: any) {
-      notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 3000 })
-      if (err.status === 404 || err.response.status === 404) {
-        this.$router.replace({
-          name: 'NotFound',
-          params: { catchAll: this.$route.path.substring(1) },
-          query: this.$route.query,
-          hash: this.$route.hash,
-          path: this.$route.path,
-        })
+      if (!this.authStore.apiKey) {
+        this.popupStore.$patch({ hasNeedCredential: true })
+        return
       }
-    }
-    this.loading = false
-  }
 
-  get canSubmit() {
-    return (this.url || this.code || this.text) && !this.loading && this.isURLFriendly
-  }
+      const qnote: QnotePartial = {
+        tags: this.selectTags.sort(),
+        url: this.url,
+        text: this.text,
+        code: this.code,
+        code_lang: this.langPicker,
+      }
 
-  async updateQnote() {
-    if (!this.url && !this.code && !this.text) {
-      notify.show('Please complete at least one field', { title: 'Warning', type: 'warning', duration: 4000 })
-      return
-    }
+      this.loading = true
+      try {
+        await this.qnotesStore.updateQnote(this.qnoteID, qnote)
+        notify.show('Qnote updated', { title: 'Success', type: 'success', duration: 3000 })
+        this.clearInputs()
+        await this.refreshQnote()
+      } catch (err) {
+        notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 4000 })
+      }
+      this.loading = false
+    },
 
-    if (!this.authStore.apiKey) {
-      this.popupStore.$patch({ hasNeedCredential: true })
-      return
-    }
+    async deleteQnote() {
+      if (!this.authStore.apiKey) {
+        this.popupStore.$patch({ hasNeedCredential: true })
+        return
+      }
 
-    const qnote: QnotePartial = {
-      tags: this.selectTags.sort(),
-      url: this.url,
-      text: this.text,
-      code: this.code,
-      code_lang: this.langPicker,
-    }
-
-    this.loading = true
-    try {
-      await this.qnotesStore.updateQnote(this.qnoteID, qnote)
-      notify.show('Qnote updated', { title: 'Success', type: 'success', duration: 3000 })
-      this.clearInputs()
-      await this.refreshQnote()
-    } catch (err) {
-      notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 4000 })
-    }
-    this.loading = false
-  }
-
-  async deleteQnote() {
-    if (!this.authStore.apiKey) {
-      this.popupStore.$patch({ hasNeedCredential: true })
-      return
-    }
-
-    this.loading = true
-    try {
-      await this.qnotesStore.deleteQnote(this.qnoteID)
-      notify.show('Qnote deleted', { title: 'Success', type: 'success', duration: 3000 })
-      this.clearInputs()
-      this.$router.replace({ name: 'Home' })
-    } catch (err) {
-      notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 4000 })
-    }
-    this.loading = false
-  }
-}
+      this.loading = true
+      try {
+        await this.qnotesStore.deleteQnote(this.qnoteID)
+        notify.show('Qnote deleted', { title: 'Success', type: 'success', duration: 3000 })
+        this.clearInputs()
+        this.$router.replace({ name: 'Home' })
+      } catch (err) {
+        notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 4000 })
+      }
+      this.loading = false
+    },
+  },
+})
 </script>
 
 <style scoped>

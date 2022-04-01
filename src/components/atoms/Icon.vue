@@ -16,34 +16,34 @@
 </template>
 
 <script lang="ts">
-import { Options, Vue } from 'vue-class-component'
+import { defineComponent, PropType } from 'vue'
 import heroicons from '@/assets/heroicons'
 
-@Options({
+export default defineComponent({
   props: {
     glyph: String,
     iconId: Number,
     color: String,
   },
+  data() {
+    return {
+      icons: heroicons,
+    }
+  },
+  computed: {
+    icon() {
+      let icon = undefined
+      if (this.glyph) {
+        icon = this.icons.find((val) => val.name === this.glyph)
+      } else if (this.iconId && this.icons[this.iconId]) {
+        icon = this.icons[this.iconId]
+      }
+      if (!icon) {
+        console.warn(`Icon '${this.glyph || this.iconId}' not found.`)
+        return this.icons[0]
+      }
+      return icon
+    },
+  },
 })
-export default class Icon extends Vue {
-  icons = heroicons
-  glyph?: string
-  iconId?: number
-  color?: string
-
-  get icon() {
-    let icon = undefined
-    if (this.glyph) {
-      icon = this.icons.find((val) => val.name === this.glyph)
-    } else if (this.iconId && this.icons[this.iconId]) {
-      icon = this.icons[this.iconId]
-    }
-    if (!icon) {
-      console.warn(`Icon '${this.glyph || this.iconId}' not found.`)
-      return this.icons[0]
-    }
-    return icon
-  }
-}
 </script>

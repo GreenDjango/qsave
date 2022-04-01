@@ -27,20 +27,23 @@
 </template>
 
 <script lang="ts">
-import { Options, Vue } from 'vue-class-component'
+import { defineComponent } from 'vue'
 import Icon from '@/components/atoms/Icon.vue'
 
-@Options({
+export default defineComponent({
   components: { Icon },
+  data() {
+    return {
+      themes: ['light', 'dark', 'valentine', 'retro', 'synthwave', 'cyberpunk', 'black', 'dracula', 'garden'],
+      themeIndex: 0,
+    }
+  },
+  methods: {
+    reloadPage() {
+      window.location.replace('/')
+    },
+  },
 })
-export default class Header extends Vue {
-  themes = ['light', 'dark', 'valentine', 'retro', 'synthwave', 'cyberpunk', 'black', 'dracula', 'garden']
-  themeIndex = 0
-
-  reloadPage() {
-    window.location.replace('/')
-  }
-}
 </script>
 
 <style scoped>

@@ -29,34 +29,45 @@
 </template>
 
 <script lang="ts">
+import { defineComponent, PropType } from 'vue'
 import Prismjs from 'prismjs'
-import { Options, Vue } from 'vue-class-component'
 import MockupCode from '@/components/molecules/MockupCode.vue'
 
-@Options({
-  components: { MockupCode },
-  emits: ['update:modelValue', 'update:langPicker'],
+export default defineComponent({
+  components: {
+    MockupCode,
+  },
   props: {
     disabled: Boolean,
     required: Boolean,
-    langPicker: String,
+    langPicker: {
+      type: String,
+      default: 'bash',
+    },
     modelValue: String,
     modelModifiers: {
-      default: () => ({}),
+      type: Object as PropType<{ [key: string]: boolean }>,
+      default: {},
+    },
+  },
+
+  data() {
+    return {
+      languages: Object.keys(Prismjs.languages).sort(),
+    }
+  },
+  emits: {
+    'update:modelValue': (payload: Event) => true,
+    'update:langPicker': (payload: Event) => true,
+  },
+  methods: {
+    emitValue(evt: Event) {
+      let val = (<any>evt.target)?.value
+      if (this.modelModifiers['trim']) {
+        val = val.trim()
+      }
+      this.$emit(`update:modelValue`, val)
     },
   },
 })
-export default class UrlInput extends Vue {
-  modelModifiers = {} as any
-  languages = Object.keys(Prismjs.languages).sort()
-  langPicker = 'bash'
-
-  emitValue(evt: Event) {
-    let val = (<any>evt.target)?.value
-    if (this.modelModifiers['trim']) {
-      val = val.trim()
-    }
-    this.$emit(`update:modelValue`, val)
-  }
-}
 </script>

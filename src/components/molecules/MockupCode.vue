@@ -5,24 +5,28 @@
 </template>
 
 <script lang="ts">
-import { Options, Vue } from 'vue-class-component'
+import { defineComponent } from 'vue'
 import Prism from '@/components/atoms/Prism.vue'
 import 'prismjs/themes/prism-tomorrow.css'
 
-@Options({
+export default defineComponent({
   components: {
     Prism,
   },
   props: {
     language: String,
-    code: String,
-    plugins: Array,
+    code: {
+      type: String,
+      default: '',
+      // required: true
+    },
+    plugins: {
+      type: Array,
+      default: [],
+      // required: true
+    },
   },
 })
-export default class MockupCode extends Vue {
-  code = ''
-  plugins = []
-}
 </script>
 
 <style scoped>

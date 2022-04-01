@@ -121,7 +121,7 @@
 </template>
 
 <script lang="ts">
-import { Options, Vue } from 'vue-class-component'
+import { defineComponent, PropType } from 'vue'
 import { Qnote } from '@/api/server.api'
 import Icon from '@/components/atoms/Icon.vue'
 import Badge from '@/components/atoms/Badge.vue'
@@ -138,80 +138,92 @@ enum DataType {
 
 type LocalQnote = Qnote & { collapse: boolean; type: DataType }
 
-@Options({
+export default defineComponent({
   components: {
     Icon,
     Badge,
     MockupCode,
   },
-  emits: ['row-click'],
   props: {
-    items: Array,
+    items: {
+      type: Array as PropType<Qnote[]>,
+      default: [],
+      // required: true
+    },
+  },
+  data() {
+    return {
+      localItems: [] as LocalQnote[],
+      sortHeader: { select: '', reverse: false },
+      isAllCollapse: true,
+    }
+  },
+  emits: {
+    'row-click': (payload: Qnote) => true,
+  },
+  watch: {
+    items: {
+      handler() {
+        this.syncWithProps()
+      },
+      deep: true,
+      immediate: true,
+    },
+  },
+  methods: {
+    syncWithProps() {
+      this.localItems = this.items.map((val) => {
+        return { ...val, collapse: true, type: this.parseQnoteType(val) }
+      })
+      this.sortItems('id')
+      this.sortHeader = { select: '', reverse: false }
+    },
+
+    parseQnoteType(qnote: Qnote) {
+      if (qnote.url && qnote.text) return DataType.URL_AND_TEXT
+      if (qnote.url && qnote.code) return DataType.URL_AND_CODE
+      if (qnote.url) return DataType.URL
+      if (qnote.text && qnote.text.length > 60) return DataType.TEXT_LONG
+      if (qnote.text) return DataType.TEXT
+      if (qnote.code) return DataType.CODE
+      qnote.text = ''
+      return DataType.TEXT
+    },
+
+    onHeaderCellClick(headerSelect: string) {
+      if (this.sortHeader.select === headerSelect) {
+        this.sortHeader.reverse = !this.sortHeader.reverse
+      } else {
+        this.sortHeader.select = headerSelect
+        this.sortHeader.reverse = false
+      }
+      this.sortItems(headerSelect as any, this.sortHeader.reverse)
+    },
+
+    sortItems(by: 'id' | 'date', reverse = false) {
+      let getValue = (itm: LocalQnote) => itm.id
+      if (by === 'date') getValue = (itm: LocalQnote) => itm.parseDate?.getTime() || 0
+
+      this.localItems.sort((itm1, itm2) => {
+        const a = getValue(itm1)
+        const b = getValue(itm2)
+        if (reverse) return b - a
+        else return a - b
+      })
+    },
+
+    extendCollapse() {
+      this.isAllCollapse = !this.isAllCollapse
+      this.localItems.forEach((val) => {
+        val.collapse = this.isAllCollapse
+      })
+    },
+
+    onRowClick(row: Qnote) {
+      this.$emit('row-click', row)
+    },
   },
 })
-export default class Table extends Vue {
-  items: Qnote[] = []
-  localItems: LocalQnote[] = []
-  sortHeader = { select: '', reverse: false }
-  isAllCollapse = true
-
-  beforeMount() {
-    this.$watch('items', () => this.syncWithProps(), { deep: true })
-    this.syncWithProps()
-  }
-
-  syncWithProps() {
-    this.localItems = this.items.map((val) => {
-      return { ...val, collapse: true, type: this.parseQnoteType(val) }
-    })
-    this.sortItems('id')
-    this.sortHeader = { select: '', reverse: false }
-  }
-
-  parseQnoteType(qnote: Qnote) {
-    if (qnote.url && qnote.text) return DataType.URL_AND_TEXT
-    if (qnote.url && qnote.code) return DataType.URL_AND_CODE
-    if (qnote.url) return DataType.URL
-    if (qnote.text && qnote.text.length > 60) return DataType.TEXT_LONG
-    if (qnote.text) return DataType.TEXT
-    if (qnote.code) return DataType.CODE
-    qnote.text = ''
-    return DataType.TEXT
-  }
-
-  onHeaderCellClick(headerSelect: string) {
-    if (this.sortHeader.select === headerSelect) {
-      this.sortHeader.reverse = !this.sortHeader.reverse
-    } else {
-      this.sortHeader.select = headerSelect
-      this.sortHeader.reverse = false
-    }
-    this.sortItems(headerSelect as any, this.sortHeader.reverse)
-  }
-
-  sortItems(by: 'id' | 'date', reverse = false) {
-    let getValue = (itm: LocalQnote) => itm.id
-    if (by === 'date') getValue = (itm: LocalQnote) => itm.parseDate?.getTime() || 0
-
-    this.localItems.sort((itm1, itm2) => {
-      const a = getValue(itm1)
-      const b = getValue(itm2)
-      if (reverse) return b - a
-      else return a - b
-    })
-  }
-
-  extendCollapse() {
-    this.isAllCollapse = !this.isAllCollapse
-    this.localItems.forEach((val) => {
-      val.collapse = this.isAllCollapse
-    })
-  }
-
-  onRowClick(row: Qnote) {
-    this.$emit('row-click', row)
-  }
-}
 </script>
 
 <style scoped>

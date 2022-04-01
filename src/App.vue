@@ -15,16 +15,15 @@
 </template>
 
 <script lang="ts">
-import { Options, Vue } from 'vue-class-component'
+import { defineComponent } from 'vue'
 import Icon from '@/components/atoms/Icon.vue'
 import GlobalDialogs from '@/components/dedicated/GlobalDialogs.vue'
 import Header from '@/components/dedicated/Header.vue'
 import Notify from '@/plugin/notify/Notify.vue'
 
-@Options({
+export default defineComponent({
   components: { Header, Icon, GlobalDialogs, notifications: Notify },
 })
-export default class App extends Vue {}
 </script>
 
 <style>

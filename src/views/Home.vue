@@ -84,7 +84,7 @@
 </template>
 
 <script lang="ts">
-import { Options, Vue } from 'vue-class-component'
+import { defineComponent } from 'vue'
 import copy from 'copy-text-to-clipboard'
 import prettyBytes from 'pretty-bytes'
 import { mapStores, useQnotes, useStats } from '@/store'
@@ -97,7 +97,7 @@ import Table from '@/components/organisms/Table.vue'
 import Loader from '@/components/atoms/Loader.vue'
 import ColorPallet from '@/components/dedicated/ColorPallet.vue'
 
-@Options({
+export default defineComponent({
   components: {
     Icon,
     Badge,
@@ -105,114 +105,118 @@ import ColorPallet from '@/components/dedicated/ColorPallet.vue'
     Loader,
     ColorPallet,
   },
-  computed: {
-    //...mapStores(useQnotes)
+  data() {
+    return {
+      loading: true,
+      stats: {
+        tq: { glyph: 'bookmark-alt', title: 'Total Qnotes', value: '0', text: '%v', subValue: 'none', subText: '↗︎ latest qnote: %v' },
+        tt: { glyph: 'tag', title: 'Total tags', value: '0', text: '%v', subValue: 'none', subText: '↗︎ more use tag: %v' },
+        ds: { glyph: 'database', title: 'Database size', value: '0 kB', text: '%v', subValue: 'none', subText: '↘ oldest qnote: %v' },
+      },
+      tags: {} as { [s: string]: string },
+      tagPicker: '-1',
+      selectTags: {} as { [s: string]: string },
+      items: [] as Qnote[],
+    }
   },
-})
-export default class Home extends Vue {
-  loading = true
-  stats = {
-    tq: { glyph: 'bookmark-alt', title: 'Total Qnotes', value: '0', text: '%v', subValue: 'none', subText: '↗︎ latest qnote: %v' },
-    tt: { glyph: 'tag', title: 'Total tags', value: '0', text: '%v', subValue: 'none', subText: '↗︎ more use tag: %v' },
-    ds: { glyph: 'database', title: 'Database size', value: '0 kB', text: '%v', subValue: 'none', subText: '↘ oldest qnote: %v' },
-  }
-  tags = {} as { [s: string]: string }
-  tagPicker = '-1'
-  selectTags = {} as { [s: string]: string }
-  items: Qnote[] = []
+  watch: {
+    tagPicker(newValue) {
+      this.onTagPicker(newValue)
+    },
+  },
+  computed: {
+    qnotesStore() {
+      return mapStores(useQnotes).qnotesStore()
+    },
 
-  get qnotesStore() {
-    return mapStores(useQnotes).qnotesStore()
-  }
-
-  get statsStore() {
-    return mapStores(useStats).statsStore()
-  }
-
+    statsStore() {
+      return mapStores(useStats).statsStore()
+    },
+  },
   beforeMount() {
-    this.$watch('tagPicker', this.onTagPicker)
     this.fetchStats()
     this.fetchQnotes()
-  }
+  },
+  methods: {
+    onTagPicker(newVal: string) {
+      if (newVal === '-1') return
+      this.tagPicker = '-1'
+      this.selectTags[newVal] = this.tags[newVal]
+      delete this.tags[newVal]
+    },
 
-  onTagPicker(newVal: string) {
-    if (newVal === '-1') return
-    this.tagPicker = '-1'
-    this.selectTags[newVal] = this.tags[newVal]
-    delete this.tags[newVal]
-  }
+    onRemoveTag(id: string) {
+      this.tags[id] = this.selectTags[id]
+      delete this.selectTags[id]
+    },
 
-  onRemoveTag(id: string) {
-    this.tags[id] = this.selectTags[id]
-    delete this.selectTags[id]
-  }
+    resetTagPicker(newTags: string[]) {
+      this.tagPicker = '-1'
+      this.selectTags = {}
+      this.tags = {}
+      newTags.forEach((val, idx) => {
+        this.tags[idx] = val
+      })
+    },
 
-  resetTagPicker(newTags: string[]) {
-    this.tagPicker = '-1'
-    this.selectTags = {}
-    this.tags = {}
-    newTags.forEach((val, idx) => {
-      this.tags[idx] = val
-    })
-  }
+    async onSearch() {
+      const q = (this.$refs.searchBox as HTMLInputElement).value.trim() || undefined
+      const tags = Object.values(this.selectTags).sort().join(';') || undefined
+      if (!q && !tags) return
 
-  async onSearch() {
-    const q = (this.$refs.searchBox as HTMLInputElement).value.trim() || undefined
-    const tags = Object.values(this.selectTags).sort().join(';') || undefined
-    if (!q && !tags) return
+      this.loading = true
+      try {
+        await this.qnotesStore.searchQnotes(q, tags)
+        this.items = (this.qnotesStore.searchedQnotes as Qnote[]) || []
+      } catch (err) {
+        this.items = []
+        notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 3000 })
+      }
+      this.loading = false
+    },
 
-    this.loading = true
-    try {
-      await this.qnotesStore.searchQnotes(q, tags)
-      this.items = (this.qnotesStore.searchedQnotes as Qnote[]) || []
-    } catch (err) {
-      this.items = []
-      notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 3000 })
-    }
-    this.loading = false
-  }
+    onRowClick(row: Qnote) {
+      const dataToCopy = row.url || row.text || row.code || ''
+      if (dataToCopy) {
+        copy(String(dataToCopy))
+        notify.show(`Row ${row.id} (${dataToCopy.slice(0, 20)}...) copied !`, { type: 'info', queue: false, duration: 1800 })
+      }
+    },
 
-  onRowClick(row: Qnote) {
-    const dataToCopy = row.url || row.text || row.code || ''
-    if (dataToCopy) {
-      copy(String(dataToCopy))
-      notify.show(`Row ${row.id} (${dataToCopy.slice(0, 20)}...) copied !`, { type: 'info', queue: false, duration: 1800 })
-    }
-  }
+    async fetchQnotes() {
+      this.loading = true
+      try {
+        await this.qnotesStore.fetchQnotes()
+        this.items = (this.qnotesStore.qnotes as Qnote[]) || []
+      } catch (err) {
+        this.items = []
+        notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 3000 })
+      }
+      this.loading = false
+    },
 
-  async fetchQnotes() {
-    this.loading = true
-    try {
-      await this.qnotesStore.fetchQnotes()
-      this.items = (this.qnotesStore.qnotes as Qnote[]) || []
-    } catch (err) {
-      this.items = []
-      notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 3000 })
-    }
-    this.loading = false
-  }
+    async fetchStats() {
+      try {
+        await this.statsStore.fetchStats()
 
-  async fetchStats() {
-    try {
-      await this.statsStore.fetchStats()
+        const tags = Object.keys(this.statsStore.stats?.all_tags || {})
+        this.resetTagPicker(tags.sort())
 
-      const tags = Object.keys(this.statsStore.stats?.all_tags || {})
-      this.resetTagPicker(tags.sort())
+        this.stats.tq.value = String(this.statsStore.stats?.total_qnotes || 0)
+        this.stats.tq.subValue = this.statsStore.stats?.last_qnote?.parseDate?.toDateString()?.slice(4) || 'none'
 
-      this.stats.tq.value = String(this.statsStore.stats?.total_qnotes || 0)
-      this.stats.tq.subValue = this.statsStore.stats?.last_qnote?.parseDate?.toDateString()?.slice(4) || 'none'
+        const bestTag = Object.entries(this.statsStore.stats?.all_tags || {}).sort(([_a, a], [_b, b]) => b - a)[0]
+        this.stats.tt.value = tags.length.toString()
+        this.stats.tt.subValue = bestTag?.[0] || 'none'
 
-      const bestTag = Object.entries(this.statsStore.stats?.all_tags || {}).sort(([_a, a], [_b, b]) => b - a)[0]
-      this.stats.tt.value = tags.length.toString()
-      this.stats.tt.subValue = bestTag?.[0] || 'none'
-
-      this.stats.ds.value = prettyBytes(this.statsStore.stats?.db_size || 0)
-      this.stats.ds.subValue = this.statsStore.stats?.older_qnote?.parseDate?.toDateString()?.slice(4) || 'none'
-    } catch (err) {
-      notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 3000 })
-    }
-  }
-}
+        this.stats.ds.value = prettyBytes(this.statsStore.stats?.db_size || 0)
+        this.stats.ds.subValue = this.statsStore.stats?.older_qnote?.parseDate?.toDateString()?.slice(4) || 'none'
+      } catch (err) {
+        notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 3000 })
+      }
+    },
+  },
+})
 </script>
 
 <style scoped>

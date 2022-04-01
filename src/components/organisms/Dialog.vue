@@ -17,48 +17,65 @@
 </template>
 
 <script lang="ts">
-import { Options, Vue } from 'vue-class-component'
+import { defineComponent } from 'vue'
 
-@Options({
-  emits: ['valid', 'refuse', 'close'],
+export default defineComponent({
   props: {
-    title: String,
-    validText: String,
-    refuseText: String,
-    showOnStart: Boolean,
-    fullWidthBtn: Boolean,
+    title: {
+      type: String,
+      default: '',
+    },
+    validText: {
+      type: String,
+      default: '',
+    },
+    refuseText: {
+      type: String,
+      default: '',
+    },
+    showOnStart: {
+      type: Boolean,
+      default: false,
+    },
+    fullWidthBtn: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  data() {
+    return {
+      show: false,
+    }
+  },
+  emits: {
+    valid: (payload: Event) => true,
+    refuse: (payload: Event) => true,
+    close: (payload: Event, valid: boolean) => true,
+  },
+  methods: {
+    beforeMount() {
+      this.show = this.showOnStart ? true : false
+    },
+
+    onValid(ev: Event) {
+      this.onClose(ev, true)
+      this.$emit('valid', ev)
+    },
+
+    onRefuse(ev: Event) {
+      this.onClose(ev)
+      this.$emit('refuse', ev)
+    },
+
+    onClose(ev: Event, valid = false) {
+      this.show = false
+      this.$emit('close', ev, valid)
+    },
+
+    showDialog(show: boolean) {
+      if (show === false) this.show = false
+      else this.show = true
+    },
   },
 })
-export default class Dialog extends Vue {
-  title = ''
-  validText = ''
-  refuseText = ''
-  showOnStart = false
-  fullWidthBtn = false
-  show = false
-
-  beforeMount() {
-    this.show = this.showOnStart ? true : false
-  }
-
-  onValid(ev: Event) {
-    this.onClose(ev, true)
-    this.$emit('valid', ev)
-  }
-
-  onRefuse(ev: Event) {
-    this.onClose(ev)
-    this.$emit('refuse', ev)
-  }
-
-  onClose(ev: Event, valid = false) {
-    this.show = false
-    this.$emit('close', ev, valid)
-  }
-
-  showDialog(show: boolean) {
-    if (show === false) this.show = false
-    else this.show = true
-  }
-}
 </script>

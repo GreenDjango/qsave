@@ -22,41 +22,44 @@
 </template>
 
 <script lang="ts">
-import { Options, Vue } from 'vue-class-component'
+import { defineComponent } from 'vue'
 
-@Options({
-  components: {},
-  emits: ['update:modelValue', 'update:isURLFriendly'],
+export default defineComponent({
   props: {
     disabled: Boolean,
     required: Boolean,
-    modelValue: String,
+    modelValue: {
+      type: String,
+      default: '',
+    },
     modelModifiers: {
-      default: () => ({}),
+      type: Object,
+      default: {},
     },
   },
+  emits: {
+    'update:modelValue': (payload: string) => true,
+    'update:isURLFriendly': (payload: boolean) => true,
+  },
   watch: {
-    isURLFriendly(newValue) {
+    isURLFriendly(newValue: boolean) {
       this.$emit('update:isURLFriendly', newValue)
     },
   },
+  computed: {
+    isURLFriendly() {
+      if (!this.modelValue) return true
+      return /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=/?&]{1,256}$/m.test(this.modelValue)
+    },
+  },
+  methods: {
+    emitValue(evt: Event) {
+      let val = (<any>evt.target)?.value
+      if (this.modelModifiers['trim']) {
+        val = val.trim()
+      }
+      this.$emit(`update:modelValue`, val)
+    },
+  },
 })
-export default class UrlInput extends Vue {
-  modelModifiers = {} as any
-  modelValue = ''
-  url = ''
-
-  get isURLFriendly() {
-    if (!this.modelValue) return true
-    return /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=/?&]{1,256}$/m.test(this.modelValue)
-  }
-
-  emitValue(evt: Event) {
-    let val = (<any>evt.target)?.value
-    if (this.modelModifiers['trim']) {
-      val = val.trim()
-    }
-    this.$emit(`update:modelValue`, val)
-  }
-}
 </script>

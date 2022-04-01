@@ -6,41 +6,54 @@
 </template>
 
 <script lang="ts">
-import { Options, Vue } from 'vue-class-component'
+import { defineComponent } from 'vue'
 import { sha256 } from 'hash.js'
 import Icon from '@/components/atoms/Icon.vue'
 
-@Options({
-  props: {
-    text: String,
-    toHash: String,
-    cross: Boolean,
-  },
+export default defineComponent({
   components: {
     Icon,
   },
-})
-export default class Badge extends Vue {
-  text = ''
-  toHash = ''
-  cross = false
-  colorIdx = '0'
-
-  beforeMount() {
-    this.$watch('toHash', () => this.selectColor())
-    this.selectColor()
-  }
-
-  get colorClass() {
+  props: {
+    text: {
+      type: String,
+      default: '',
+    },
+    toHash: {
+      type: String,
+      default: '',
+    },
+    cross: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  data() {
     return {
-      [`badge-color-${this.colorIdx}`]: true,
+      colorIdx: '0',
     }
-  }
-
-  selectColor() {
-    this.colorIdx = sha256().update(this.toHash.toLowerCase()).digest('hex')[0]
-  }
-}
+  },
+  watch: {
+    toHash: {
+      handler() {
+        this.selectColor()
+      },
+      immediate: true,
+    },
+  },
+  computed: {
+    colorClass() {
+      return {
+        [`badge-color-${this.colorIdx}`]: true,
+      }
+    },
+  },
+  methods: {
+    selectColor() {
+      this.colorIdx = sha256().update(this.toHash.toLowerCase()).digest('hex')[0]
+    },
+  },
+})
 </script>
 
 <style scoped>

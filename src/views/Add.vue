@@ -61,7 +61,7 @@
 </template>
 
 <script lang="ts">
-import { Options, Vue } from 'vue-class-component'
+import { defineComponent } from 'vue'
 import { mapStores, useQnotes, useAuth, usePopup } from '@/store'
 import { QnotePartial } from '@/api/server.api'
 import { notify } from '@/plugin/notify'
@@ -72,7 +72,7 @@ import TagPicker from '@/components/molecules/TagPicker.vue'
 import UrlInput from '@/components/molecules/UrlInput.vue'
 import CodeInput from '@/components/molecules/CodeInput.vue'
 
-@Options({
+export default defineComponent({
   components: {
     Icon,
     Badge,
@@ -80,70 +80,75 @@ import CodeInput from '@/components/molecules/CodeInput.vue'
     UrlInput,
     CodeInput,
   },
+  data: () => {
+    return {
+      loading: false,
+      isURLFriendly: true,
+      url: '',
+      text: '',
+      code: '',
+      selectTags: [] as string[],
+      langPicker: 'bash',
+    }
+  },
+  computed: {
+    qnotesStore() {
+      return mapStores(useQnotes).qnotesStore()
+    },
+    authStore() {
+      return mapStores(useAuth).authStore()
+    },
+    popupStore() {
+      return mapStores(usePopup).popupStore()
+    },
+
+    canSubmit() {
+      // const can = (this.url || this.code || this.text) && !this.loading && this.isURLFriendly
+      return this.url
+    },
+  },
+  methods: {
+    clearInputs() {
+      this.url = ''
+      this.text = ''
+      this.code = ''
+      this.langPicker = 'bash'
+    },
+
+    async createQnote() {
+      if (!this.url && !this.code && !this.text) {
+        notify.show('Please complete at least one field', { title: 'Warning', type: 'warning', duration: 4000 })
+        return
+      }
+
+      if (!this.authStore.apiKey) {
+        this.popupStore.$patch({ hasNeedCredential: true })
+        return
+      }
+
+      const qnote: QnotePartial = { tags: [] }
+      if (this.url) qnote.url = this.url
+      if (this.text) qnote.text = this.text
+      else if (this.code) {
+        qnote.code = this.code
+        qnote.code_lang = this.langPicker
+      }
+      if (this.selectTags.length) qnote.tags = this.selectTags.sort()
+
+      this.loading = true
+      try {
+        await this.qnotesStore.createQnote(qnote)
+        notify.show('New qnote added', { title: 'Success', type: 'success', duration: 3000 })
+        this.clearInputs()
+        ;(<any>this.$refs).tagPicker.setSelectTags()
+        ;(<any>this.$refs).tagPicker.fetchTags()
+      } catch (err) {
+        notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 4000 })
+      }
+      this.loading = false
+    },
+  },
 })
-export default class Add extends Vue {
-  loading = false
-  isURLFriendly = true
-  url = ''
-  text = ''
-  code = ''
-  selectTags = [] as string[]
-  langPicker = 'bash'
-
-  get qnotesStore() {
-    return mapStores(useQnotes).qnotesStore()
-  }
-  get authStore() {
-    return mapStores(useAuth).authStore()
-  }
-  get popupStore() {
-    return mapStores(usePopup).popupStore()
-  }
-
-  clearInputs() {
-    this.url = ''
-    this.text = ''
-    this.code = ''
-    this.langPicker = 'bash'
-  }
-
-  get canSubmit() {
-    return (this.url || this.code || this.text) && !this.loading && this.isURLFriendly
-  }
-
-  async createQnote() {
-    if (!this.url && !this.code && !this.text) {
-      notify.show('Please complete at least one field', { title: 'Warning', type: 'warning', duration: 4000 })
-      return
-    }
-
-    if (!this.authStore.apiKey) {
-      this.popupStore.$patch({ hasNeedCredential: true })
-      return
-    }
-
-    const qnote: QnotePartial = { tags: [] }
-    if (this.url) qnote.url = this.url
-    if (this.text) qnote.text = this.text
-    else if (this.code) {
-      qnote.code = this.code
-      qnote.code_lang = this.langPicker
-    }
-    if (this.selectTags.length) qnote.tags = this.selectTags.sort()
-
-    this.loading = true
-    try {
-      await this.qnotesStore.createQnote(qnote)
-      notify.show('New qnote added', { title: 'Success', type: 'success', duration: 3000 })
-      this.clearInputs()
-      ;(<any>this.$refs).tagPicker.setSelectTags()
-      ;(<any>this.$refs).tagPicker.fetchTags()
-    } catch (err) {
-      notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 4000 })
-    }
-    this.loading = false
-  }
-}
 </script>
 
 <style scoped>

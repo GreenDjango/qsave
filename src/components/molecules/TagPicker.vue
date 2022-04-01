@@ -38,110 +38,109 @@
 </template>
 
 <script lang="ts">
-import { Options, Vue } from 'vue-class-component'
+import { defineComponent } from 'vue'
 import { mapStores, useTags } from '@/store'
 import { notify } from '@/plugin/notify'
 import { stringifyError, errorTitle } from '@/utils'
 
-@Options({
-  components: {},
-  props: {},
-  emits: ['update:select-tags'],
+export default defineComponent({
+  data() {
+    return {
+      searchTag: '',
+      searchTagFocus: false,
+      tags: [] as { name: string; select: boolean; local: boolean }[],
+    }
+  },
+  emits: {
+    'update:select-tags': (payload: string[]) => true,
+  },
   watch: {
     selectTags(newValue) {
       this.$emit('update:select-tags', newValue)
     },
   },
-})
-export default class TagPicker extends Vue {
-  searchTag = ''
-  searchTagFocus = false
-  tags = [] as { name: string; select: boolean; local: boolean }[]
+  computed: {
+    tagsStore() {
+      return mapStores(useTags).tagsStore()
+    },
 
-  get tagsStore() {
-    return mapStores(useTags).tagsStore()
-  }
-
+    isSearchTagFriendly() {
+      return !/[^a-z0-9-]/.test(this.searchTag)
+    },
+    matchTags() {
+      const reg = new RegExp(this.searchTag, 'i')
+      let match = []
+      for (const tag of this.tags) {
+        if (!tag.select && reg.test(tag.name)) match.push(tag.name)
+      }
+      return match.sort()
+    },
+    selectTags() {
+      return this.tags
+        .filter((val) => val.select)
+        .map((val) => val.name)
+        .sort()
+    },
+  },
   beforeMount() {
     this.fetchTags()
-  }
+  },
+  methods: {
+    onSearchTagFocus(isFocus: boolean) {
+      this.searchTagFocus = isFocus
+    },
 
-  // Search Tag
-  get isSearchTagFriendly() {
-    return !/[^a-z0-9-]/.test(this.searchTag)
-  }
+    onChoseNewTag() {
+      if (!this.isSearchTagFriendly) return
+      this.onChoseExistingTag(this.searchTag)
+    },
 
-  get matchTags() {
-    const reg = new RegExp(this.searchTag, 'i')
-    let match = []
-    for (const tag of this.tags) {
-      if (!tag.select && reg.test(tag.name)) match.push(tag.name)
-    }
-    return match.sort()
-  }
-
-  get selectTags() {
-    return this.tags
-      .filter((val) => val.select)
-      .map((val) => val.name)
-      .sort()
-  }
-
-  onSearchTagFocus(isFocus: boolean) {
-    this.searchTagFocus = isFocus
-  }
-
-  onChoseNewTag() {
-    if (!this.isSearchTagFriendly) return
-    this.onChoseExistingTag(this.searchTag)
-  }
-
-  onChoseExistingTag(tag: string) {
-    this.searchTag = ''
-    const findTag = this.tags.find((val) => val.name === tag)
-    if (findTag) findTag.select = true
-    else this.tags.push({ name: tag, select: true, local: true })
-  }
-
-  onRemoveTag(tag: string) {
-    const findTag = this.tags.find((val) => val.name === tag)
-    if (findTag) findTag.select = false
-    else this.tags.push({ name: tag, select: false, local: true })
-  }
-
-  setTags(...tags: string[]) {
-    const locals = this.tags.filter((val) => val.local)
-    this.tags = [...new Set(tags)].map((tag) => {
-      return {
-        name: tag,
-        select: this.tags.some((val) => val.name === tag && val.select),
-        local: false,
-      }
-    })
-    for (const local of locals) {
-      const findTag = this.tags.find((val) => val.name === local.name)
-      if (!findTag) this.tags.push(local)
-    }
-  }
-
-  setSelectTags(...tags: string[]) {
-    this.tags.forEach((val) => (val.select = false))
-    for (const tag of tags) {
+    onChoseExistingTag(tag: string) {
+      this.searchTag = ''
       const findTag = this.tags.find((val) => val.name === tag)
       if (findTag) findTag.select = true
       else this.tags.push({ name: tag, select: true, local: true })
-    }
-  }
+    },
 
-  // Fetch data
-  async fetchTags() {
-    try {
-      await this.tagsStore.fetchStats()
-      const tags = Object.keys(this.tagsStore.tags || {})
-      this.setTags(...tags)
-    } catch (err) {
-      notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 3000 })
-    }
-  }
-}
+    onRemoveTag(tag: string) {
+      const findTag = this.tags.find((val) => val.name === tag)
+      if (findTag) findTag.select = false
+      else this.tags.push({ name: tag, select: false, local: true })
+    },
+
+    setTags(...tags: string[]) {
+      const locals = this.tags.filter((val) => val.local)
+      this.tags = [...new Set(tags)].map((tag) => {
+        return {
+          name: tag,
+          select: this.tags.some((val) => val.name === tag && val.select),
+          local: false,
+        }
+      })
+      for (const local of locals) {
+        const findTag = this.tags.find((val) => val.name === local.name)
+        if (!findTag) this.tags.push(local)
+      }
+    },
+
+    setSelectTags(...tags: string[]) {
+      this.tags.forEach((val) => (val.select = false))
+      for (const tag of tags) {
+        const findTag = this.tags.find((val) => val.name === tag)
+        if (findTag) findTag.select = true
+        else this.tags.push({ name: tag, select: true, local: true })
+      }
+    },
+
+    async fetchTags() {
+      try {
+        await this.tagsStore.fetchStats()
+        const tags = Object.keys(this.tagsStore.tags || {})
+        this.setTags(...tags)
+      } catch (err) {
+        notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 3000 })
+      }
+    },
+  },
+})
 </script>
