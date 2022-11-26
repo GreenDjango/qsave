@@ -22,7 +22,7 @@ export default defineComponent({
     },
     plugins: {
       type: Array,
-      default: [],
+      default: [] as unknown[],
       // required: true
     },
   },

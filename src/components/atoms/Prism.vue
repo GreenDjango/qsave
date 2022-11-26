@@ -135,13 +135,13 @@ export default {
 </script>
 
 <style>
-pre[class*="language-"].prism-pre {
+pre[class*='language-'].prism-pre {
   background: none;
   padding: 0 1rem 1rem 1rem;
   margin: 0;
 }
 
-pre[class*="language-"].prism-pre.line-numbers {
+pre[class*='language-'].prism-pre.line-numbers {
   padding-left: 3rem;
 }
 </style>

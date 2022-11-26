@@ -52,7 +52,7 @@ export default defineComponent({
     }
   },
   emits: {
-    'update:select-tags': (payload: string[]) => true,
+    'update:select-tags': (_payload: string[]) => true,
   },
   watch: {
     selectTags(newValue) {

@@ -30,7 +30,7 @@
 
           <div class="relative w-full sm:w-2/3 md:w-1/3 mt-3 md:mt-0">
             <select v-model="tagPicker" class="select select-bordered w-full">
-              <option disabled="" selected="" value="-1">Choose a tag</option>
+              <option disabled selected value="-1">Choose a tag</option>
               <option v-for="(tag, key) in tags" :key="key" :value="key">
                 {{ tag }}
               </option>
@@ -60,7 +60,7 @@
 
         <Loader v-if="loading" class="w-full my-6" />
 
-        <Table v-else-if="items && items.length" :items="items" @row-click="onRowClick" />
+        <DataTable v-else-if="items && items.length" :items="items" @row-click="onRowClick" />
 
         <div v-else class="w-full text-center my-6">No Qnotes found</div>
 
@@ -93,25 +93,39 @@ import { notify } from '@/plugin/notify'
 import { stringifyError, errorTitle } from '@/utils'
 import Icon from '@/components/atoms/Icon.vue'
 import Badge from '@/components/atoms/Badge.vue'
-import Table from '@/components/organisms/Table.vue'
+import DataTable from '@/components/organisms/Table.vue'
 import Loader from '@/components/atoms/Loader.vue'
-import ColorPallet from '@/components/dedicated/ColorPallet.vue'
+// import ColorPallet from '@/components/dedicated/ColorPallet.vue'
 
 export default defineComponent({
   components: {
     Icon,
     Badge,
-    Table,
+    DataTable,
     Loader,
-    ColorPallet,
+    // ColorPallet,
   },
   data() {
     return {
       loading: true,
       stats: {
-        tq: { glyph: 'bookmark-alt', title: 'Total Qnotes', value: '0', text: '%v', subValue: 'none', subText: '↗︎ latest qnote: %v' },
+        tq: {
+          glyph: 'bookmark-alt',
+          title: 'Total Qnotes',
+          value: '0',
+          text: '%v',
+          subValue: 'none',
+          subText: '↗︎ latest qnote: %v',
+        },
         tt: { glyph: 'tag', title: 'Total tags', value: '0', text: '%v', subValue: 'none', subText: '↗︎ more use tag: %v' },
-        ds: { glyph: 'database', title: 'Database size', value: '0 kB', text: '%v', subValue: 'none', subText: '↘ oldest qnote: %v' },
+        ds: {
+          glyph: 'database',
+          title: 'Database size',
+          value: '0 kB',
+          text: '%v',
+          subValue: 'none',
+          subText: '↘ oldest qnote: %v',
+        },
       },
       tags: {} as { [s: string]: string },
       tagPicker: '-1',
@@ -145,7 +159,7 @@ export default defineComponent({
       delete this.tags[newVal]
     },
 
-    onRemoveTag(id: string) {
+    onRemoveTag(id: string | number) {
       this.tags[id] = this.selectTags[id]
       delete this.selectTags[id]
     },
@@ -160,14 +174,17 @@ export default defineComponent({
     },
 
     async onSearch() {
-      const q = (this.$refs.searchBox as HTMLInputElement).value.trim() || undefined
-      const tags = Object.values(this.selectTags).sort().join(';') || undefined
-      if (!q && !tags) return
+      const q = (this.$refs.searchBox as HTMLInputElement).value.trim()
+      const tags = Object.values(this.selectTags).sort().join(';')
+      if (!q && !tags) {
+        await this.fetchQnotes()
+        return
+      }
 
       this.loading = true
       try {
         await this.qnotesStore.searchQnotes(q, tags)
-        this.items = (this.qnotesStore.searchedQnotes as Qnote[]) || []
+        this.items = this.qnotesStore.searchedQnotes || []
       } catch (err) {
         this.items = []
         notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 3000 })
@@ -187,7 +204,7 @@ export default defineComponent({
       this.loading = true
       try {
         await this.qnotesStore.fetchQnotes()
-        this.items = (this.qnotesStore.qnotes as Qnote[]) || []
+        this.items = this.qnotesStore.qnotes || []
       } catch (err) {
         this.items = []
         notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 3000 })

@@ -48,9 +48,9 @@ export default defineComponent({
     }
   },
   emits: {
-    valid: (payload: Event) => true,
-    refuse: (payload: Event) => true,
-    close: (payload: Event, valid: boolean) => true,
+    valid: (_payload: Event) => true,
+    refuse: (_payload: Event) => true,
+    close: (_payload: Event, _valid: boolean) => true,
   },
   methods: {
     beforeMount() {

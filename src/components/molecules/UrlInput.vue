@@ -34,12 +34,12 @@ export default defineComponent({
     },
     modelModifiers: {
       type: Object,
-      default: {},
+      default: () => ({}),
     },
   },
   emits: {
-    'update:modelValue': (payload: string) => true,
-    'update:isURLFriendly': (payload: boolean) => true,
+    'update:modelValue': (_payload: string) => true,
+    'update:isURLFriendly': (_payload: boolean) => true,
   },
   watch: {
     isURLFriendly(newValue: boolean) {
@@ -54,7 +54,7 @@ export default defineComponent({
   },
   methods: {
     emitValue(evt: Event) {
-      let val = (<any>evt.target)?.value
+      let val = (evt.target as any)?.value
       if (this.modelModifiers['trim']) {
         val = val.trim()
       }

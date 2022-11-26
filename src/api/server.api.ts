@@ -122,7 +122,7 @@ class ApiServer {
     if (qnote.tags) qnote.tags = ApiServer.tagsToString(qnote.tags) as any
     const form = new FormData()
     Object.keys(qnote).forEach((key) => {
-      const value = (<any>qnote)[key]
+      const value = (qnote as any)[key]
       if (value === null || value === undefined) return
       form.append(key, value)
     })

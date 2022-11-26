@@ -1,8 +1,8 @@
 <template>
   <div class="home grid grid-cols-1 gap-6 px-8 py-5 max-w-screen-2xl mx-auto">
-    <Dialog ref="confirmDelete" title="Confirm Delete" validText="Delete" refuseText="Cancel" @valid="deleteQnote">
+    <DialogModal ref="confirmDelete" title="Confirm Delete" validText="Delete" refuseText="Cancel" @valid="deleteQnote">
       <div class="text-center text-md text-base-content opacity-80">Are you sure you want to delete this Qnote?</div>
-    </Dialog>
+    </DialogModal>
     <div class="card col-span-1 row-span-3 shadow-lg bg-base-100">
       <div class="card-body px-6">
         <h2 class="my-4 text-2xl font-bold card-title">Update a Qnote</h2>
@@ -16,7 +16,7 @@
               :toHash="tag"
               :text="tag"
               :cross="true"
-              @click="$refs.tagPicker.onRemoveTag(tag)"
+              @click=";($refs.tagPicker as any).onRemoveTag(tag)"
               class="badge-outline cursor-pointer mb-1 mr-1"
             />
           </ul>
@@ -38,7 +38,7 @@
               </label>
               <textarea
                 class="textarea textarea-primary textarea-bordered h-32 bg-neutral w-full"
-                :disabled="code.length && !text.length"
+                :disabled="!!code.length && !text.length"
                 placeholder="Text"
                 v-model.trim="text"
               ></textarea>
@@ -59,7 +59,7 @@
                 class="btn btn-warning w-max"
                 :class="{ loading: loading }"
                 :disabled="loading"
-                @click="$refs.confirmDelete.showDialog()"
+                @click=";($refs.confirmDelete as any).showDialog()"
               >
                 delete
               </button>
@@ -80,21 +80,19 @@ import { mapStores, useQnotes, useAuth, usePopup } from '@/store'
 import { QnotePartial } from '@/api/server.api'
 import { notify } from '@/plugin/notify'
 import { stringifyError, errorTitle } from '@/utils'
-import Icon from '@/components/atoms/Icon.vue'
 import Badge from '@/components/atoms/Badge.vue'
 import TagPicker from '@/components/molecules/TagPicker.vue'
 import UrlInput from '@/components/molecules/UrlInput.vue'
 import CodeInput from '@/components/molecules/CodeInput.vue'
-import Dialog from '@/components/organisms/Dialog.vue'
+import DialogModal from '@/components/organisms/Dialog.vue'
 
 export default defineComponent({
   components: {
-    Icon,
     Badge,
     TagPicker,
     UrlInput,
     CodeInput,
-    Dialog,
+    DialogModal,
   },
   props: {
     propId: {
@@ -167,14 +165,14 @@ export default defineComponent({
         if (qnote.code) this.code = qnote.code
         if (qnote.text) this.text = qnote.text
         if (qnote.code_lang) this.langPicker = qnote.code_lang
-        ;(<any>this.$refs).tagPicker.setSelectTags(...(qnote.tags || []))
-        ;(<any>this.$refs).tagPicker.fetchTags()
+        ;(this.$refs as any).tagPicker.setSelectTags(...(qnote.tags || []))
+        ;(this.$refs as any).tagPicker.fetchTags()
       } catch (err: any) {
         notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 3000 })
         if (err.status === 404 || err.response.status === 404) {
           this.$router.replace({
             name: 'NotFound',
-            params: { catchAll: this.$route.path.substring(1) },
+            params: { catchAll: this.$route.path.slice(1) },
             query: this.$route.query,
             hash: this.$route.hash,
             path: this.$route.path,

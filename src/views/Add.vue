@@ -13,7 +13,7 @@
               :toHash="tag"
               :text="tag"
               :cross="true"
-              @click="$refs.tagPicker.onRemoveTag(tag)"
+              @click=";($refs.tagPicker as any).onRemoveTag(tag)"
               class="badge-outline cursor-pointer mb-1 mr-1"
             />
           </ul>
@@ -35,7 +35,7 @@
               </label>
               <textarea
                 class="textarea textarea-primary textarea-bordered h-32 bg-neutral w-full"
-                :disabled="code.length"
+                :disabled="!!code.length"
                 placeholder="Text"
                 v-model.trim="text"
               ></textarea>
@@ -66,7 +66,6 @@ import { mapStores, useQnotes, useAuth, usePopup } from '@/store'
 import { QnotePartial } from '@/api/server.api'
 import { notify } from '@/plugin/notify'
 import { stringifyError, errorTitle } from '@/utils'
-import Icon from '@/components/atoms/Icon.vue'
 import Badge from '@/components/atoms/Badge.vue'
 import TagPicker from '@/components/molecules/TagPicker.vue'
 import UrlInput from '@/components/molecules/UrlInput.vue'
@@ -74,7 +73,6 @@ import CodeInput from '@/components/molecules/CodeInput.vue'
 
 export default defineComponent({
   components: {
-    Icon,
     Badge,
     TagPicker,
     UrlInput,
@@ -140,8 +138,8 @@ export default defineComponent({
         await this.qnotesStore.createQnote(qnote)
         notify.show('New qnote added', { title: 'Success', type: 'success', duration: 3000 })
         this.clearInputs()
-        ;(<any>this.$refs).tagPicker.setSelectTags()
-        ;(<any>this.$refs).tagPicker.fetchTags()
+        ;(this.$refs as any).tagPicker.setSelectTags()
+        ;(this.$refs as any).tagPicker.fetchTags()
       } catch (err) {
         notify.show(stringifyError(err), { title: errorTitle(err), type: 'error', duration: 4000 })
       }

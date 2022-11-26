@@ -71,7 +71,7 @@
 
           <div v-else-if="item.type === 'TEXT_LONG'" class="custom-collapse collapse collapse-arrow">
             <input :id="'item-' + item.id" :checked="!item.collapse" type="checkbox" />
-            <label :for="'item-' + item.id" class="collapse-title text-md font-medium"> {{ item.text.substr(0, 50) }}... </label>
+            <label :for="'item-' + item.id" class="collapse-title text-md font-medium"> {{ item.text?.slice(0, 50) }}... </label>
             <div class="collapse-content">
               <p>{{ item.text }}</p>
             </div>
@@ -97,7 +97,7 @@
               </a>
             </label>
             <label v-else :for="'item-' + item.id" class="collapse-title text-md font-medium">
-              {{ item.code.substr(0, 50) }}...
+              {{ item.code?.slice(0, 50) }}...
             </label>
             <div class="collapse-content collapse-content-code cursor-auto">
               <MockupCode language="bash" :code="item.code" :plugins="[]" />
@@ -147,7 +147,7 @@ export default defineComponent({
   props: {
     items: {
       type: Array as PropType<Qnote[]>,
-      default: [],
+      default: [] as Qnote[],
       // required: true
     },
   },
@@ -159,7 +159,7 @@ export default defineComponent({
     }
   },
   emits: {
-    'row-click': (payload: Qnote) => true,
+    'row-click': (_payload: Qnote) => true,
   },
   watch: {
     items: {

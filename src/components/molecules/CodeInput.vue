@@ -4,11 +4,11 @@
       <span class="label-text self-end">Your code</span>
       <select
         :value="langPicker"
-        @change="$emit(`update:langPicker`, $event.target.value)"
+        @change="$emit(`update:langPicker`, $event?.target?.value)"
         :disabled="disabled"
         class="select select-bordered select-sm pr-7 label-text-alt"
       >
-        <option disabled="" selected="" value="-1">Choose a language</option>
+        <option disabled selected value="-1">Choose a language</option>
         <option v-for="lang in languages" :key="lang" :value="lang">
           {{ lang }}
         </option>
@@ -23,7 +23,13 @@
         :value="modelValue"
         @input="emitValue($event)"
       ></textarea>
-      <MockupCode v-show="modelValue.length" :language="langPicker" :code="modelValue" :plugins="['line-numbers']" class="mt-2" />
+      <MockupCode
+        v-show="modelValue?.length"
+        :language="langPicker"
+        :code="modelValue"
+        :plugins="['line-numbers']"
+        class="mt-2"
+      />
     </div>
   </div>
 </template>
@@ -47,7 +53,7 @@ export default defineComponent({
     modelValue: String,
     modelModifiers: {
       type: Object as PropType<{ [key: string]: boolean }>,
-      default: {},
+      default: () => ({}),
     },
   },
 
@@ -57,12 +63,12 @@ export default defineComponent({
     }
   },
   emits: {
-    'update:modelValue': (payload: Event) => true,
-    'update:langPicker': (payload: Event) => true,
+    'update:modelValue': (_payload: Event) => true,
+    'update:langPicker': (_payload: Event) => true,
   },
   methods: {
     emitValue(evt: Event) {
-      let val = (<any>evt.target)?.value
+      let val = (evt.target as any)?.value
       if (this.modelModifiers['trim']) {
         val = val.trim()
       }

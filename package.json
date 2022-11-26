@@ -6,7 +6,8 @@
     "dev": "vue-cli-service serve",
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint --no-fix"
+    "lint": "vue-cli-service lint --no-fix",
+    "typescript:check": "tsc --noEmit"
   },
   "dependencies": {
     "axios": "^0.27.0",
@@ -25,8 +26,6 @@
   },
   "devDependencies": {
     "@types/prismjs": "^1.26.0",
-    "@typescript-eslint/eslint-plugin": "^5.17.0",
-    "@typescript-eslint/parser": "^5.17.0",
     "@vue/cli-plugin-babel": "~5.0.4",
     "@vue/cli-plugin-eslint": "~5.0.4",
     "@vue/cli-plugin-pwa": "~5.0.4",
@@ -38,11 +37,10 @@
     "@vue/eslint-config-typescript": "^11.0.0",
     "autoprefixer": "^10.4.4",
     "eslint": "^8.12.0",
-    "eslint-plugin-prettier": "^4.0.0",
     "eslint-plugin-vue": "^9.5.0",
     "postcss": "^8.4.12",
-    "prettier": "^2.6.1",
-    "typescript": "~4.7.0"
+    "prettier": "^2.8.0",
+    "typescript": "~4.8.0"
   },
   "eslintConfig": {
     "root": true,
@@ -52,17 +50,40 @@
     "extends": [
       "plugin:vue/vue3-essential",
       "eslint:recommended",
-      "@vue/typescript/recommended",
-      "@vue/prettier",
-      "@vue/prettier/@typescript-eslint"
+      "@vue/eslint-config-typescript",
+      "@vue/eslint-config-prettier"
     ],
     "parserOptions": {
-      "ecmaVersion": 2020
+      "ecmaVersion": "latest"
     },
     "rules": {
       "@typescript-eslint/explicit-module-boundary-types": "off",
-      "@typescript-eslint/no-explicit-any": "off"
-    }
+      "@typescript-eslint/no-explicit-any": "off",
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          "argsIgnorePattern": "^_",
+          "varsIgnorePattern": "^_",
+          "caughtErrorsIgnorePattern": "^_"
+        }
+      ],
+      "vue/multi-word-component-names": "off"
+    },
+    "ignorePatterns": [
+      "./api",
+      "dist",
+      "node_modules",
+      "assets"
+    ]
+  },
+  "prettier": {
+    "semi": false,
+    "singleQuote": true,
+    "trailingComma": "es5",
+    "useTabs": false,
+    "tabWidth": 2,
+    "printWidth": 130
   },
   "browserslist": [
     "> 1%",

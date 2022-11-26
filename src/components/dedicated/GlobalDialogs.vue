@@ -1,13 +1,13 @@
 <template>
   <div class="dialogs">
-    <Dialog ref="dialog401" title="Unauthorized Request" validText="Login" refuseText="Continue" @close="close401">
+    <DialogModal ref="dialog401" title="Unauthorized Request" validText="Login" refuseText="Continue" @close="close401">
       <div class="text-center text-md text-base-content opacity-80">
         You made an unauthorized request (HTTP 401).<br />
         You can continue to navigate<br />
         or try to re login again.
       </div>
-    </Dialog>
-    <Dialog ref="dialogAuth" title="Authentication" validText="Login" refuseText="Back" @close="closeAuth">
+    </DialogModal>
+    <DialogModal ref="dialogAuth" title="Authentication" validText="Login" refuseText="Back" @close="closeAuth">
       <div class="text-center text-md text-base-content opacity-80">
         <label class="label"> You need to add your secret key for upload new Qnote. </label>
         <input
@@ -18,17 +18,17 @@
           v-model.trim="authKey"
         />
       </div>
-    </Dialog>
+    </DialogModal>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue'
 import { mapStores, usePopup, useAuth } from '@/store'
-import Dialog from '@/components/organisms/Dialog.vue'
+import DialogModal from '@/components/organisms/Dialog.vue'
 
 export default defineComponent({
-  components: { Dialog },
+  components: { DialogModal },
   data() {
     return {
       authKey: '',
@@ -36,10 +36,10 @@ export default defineComponent({
   },
   watch: {
     'popupStore.is401': function (value) {
-      if (value) (<any>this.$refs.dialog401).showDialog()
+      if (value) (this.$refs.dialog401 as any).showDialog()
     },
     'popupStore.hasNeedCredential': function (value) {
-      if (value) (<any>this.$refs.dialogAuth).showDialog()
+      if (value) (this.$refs.dialogAuth as any).showDialog()
     },
   },
   computed: {

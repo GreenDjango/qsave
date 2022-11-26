@@ -8,7 +8,7 @@
   >
     <Icon glyph="plus" class="inline-block w-7 stroke-current" />
   </router-link>
-  <Header class="w-full z-10" />
+  <AppHeader class="w-full z-10" />
   <main class="text-base-content">
     <router-view />
   </main>
@@ -18,11 +18,11 @@
 import { defineComponent } from 'vue'
 import Icon from '@/components/atoms/Icon.vue'
 import GlobalDialogs from '@/components/dedicated/GlobalDialogs.vue'
-import Header from '@/components/dedicated/Header.vue'
+import AppHeader from '@/components/dedicated/Header.vue'
 import Notify from '@/plugin/notify/Notify.vue'
 
 export default defineComponent({
-  components: { Header, Icon, GlobalDialogs, notifications: Notify },
+  components: { AppHeader, Icon, GlobalDialogs, notifications: Notify },
 })
 </script>
 
