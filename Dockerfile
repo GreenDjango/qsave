@@ -1,5 +1,7 @@
+# syntax=docker/dockerfile:1
+
 # set builder image
-FROM node:16-alpine AS builder
+FROM node:20-alpine AS builder
 
 # set the working directory in the container
 WORKDIR /build
@@ -18,7 +20,7 @@ COPY ./ ./
 RUN yarn run build
 
 # set base image (host OS)
-FROM nginx:1.21-alpine
+FROM nginx:1.25-alpine
 
 COPY --from=builder /build/dist/ /data/www/
 
