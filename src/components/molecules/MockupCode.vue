@@ -45,6 +45,9 @@ export default defineComponent({
   margin-bottom: 0.5rem;
   opacity: 0.3;
   width: 0.75rem;
-  box-shadow: 1em 0, 2.4em 0, 3.8em 0;
+  box-shadow:
+    1em 0,
+    2.4em 0,
+    3.8em 0;
 }
 </style>

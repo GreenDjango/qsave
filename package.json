@@ -10,19 +10,18 @@
     "typescript:check": "tsc --noEmit"
   },
   "dependencies": {
-    "axios": "^0.27.0",
+    "axios": "^1.6.3",
     "copy-text-to-clipboard": "^3.0.1",
-    "core-js": "^3.21.1",
     "daisyui": "~1.6.1",
     "hash.js": "^1.1.7",
-    "pinia": "^2.0.13",
-    "pinia-plugin-persistedstate": "^1.5.1",
+    "pinia": "^2.1.7",
+    "pinia-plugin-persistedstate": "^3.2.1",
     "pretty-bytes": "^6.0.0",
-    "prismjs": "^1.27.0",
+    "prismjs": "^1.29.0",
     "register-service-worker": "^1.7.1",
     "tailwindcss": "^2.2.19",
-    "vue": "^3.2.0",
-    "vue-router": "^4.0.0"
+    "vue": "~3.4.3",
+    "vue-router": "^4.2.5"
   },
   "devDependencies": {
     "@types/prismjs": "^1.26.0",
@@ -33,14 +32,14 @@
     "@vue/cli-plugin-typescript": "~5.0.4",
     "@vue/cli-service": "~5.0.4",
     "@vue/compiler-sfc": "^3.0.0",
-    "@vue/eslint-config-prettier": "^7.0.0",
-    "@vue/eslint-config-typescript": "^11.0.0",
+    "@vue/eslint-config-prettier": "^9.0.0",
+    "@vue/eslint-config-typescript": "^12.0.0",
     "autoprefixer": "^10.4.4",
     "eslint": "^8.12.0",
     "eslint-plugin-vue": "^9.5.0",
     "postcss": "^8.4.12",
-    "prettier": "^2.8.0",
-    "typescript": "~4.8.0"
+    "prettier": "^3.1.1",
+    "typescript": "~5.3.3"
   },
   "eslintConfig": {
     "root": true,
